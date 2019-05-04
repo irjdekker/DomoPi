@@ -1,0 +1,7 @@
+#!/bin/bash
+
+NEFIT_SERIAL_NUMBER=<NEFIT_SERIAL_NUMBER>
+NEFIT_ACCESS_KEY=<NEFIT_ACCESS_KEY>
+NEFIT_PASSWORD=<NEFIT_PASSWORD>
+
+/usr/bin/easy-server --serial=$NEFIT_SERIAL_NUMBER --access-key=$NEFIT_ACCESS_KEY --password=$NEFIT_PASSWORD --host=0.0.0.0 > /tmp/nefit-easy.log
