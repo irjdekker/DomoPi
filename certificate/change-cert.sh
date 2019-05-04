@@ -2,7 +2,7 @@
 echo -e "\033[1;34mStopping domoticz service ...\033[0m"
 sudo service domoticz.sh stop
 echo -e "\033[1;34mRenewing certificate ...\033[0m"
-sudo /usr/bin/certbot certonly --manual --preferred-challenges dns --manual-public-ip-logging-ok --manual-auth-hook /home/pi/certificate/cf-auth.sh --manual-cleanup-hook /home/pi/certificate/cf-clean.sh --rsa-key-size 2048 --renew-by-default -d *.tanix.nl
+sudo /usr/bin/certbot certonly --manual --preferred-challenges dns --manual-public-ip-logging-ok --manual-auth-hook /home/pi/certificate/cf-auth.sh --manual-cleanup-hook /home/pi/certificate/cf-clean.sh --rsa-key-size 2048 --renew-by-default --register-unsafely-without-email -d *.tanix.nl
 rc=$?;
 if [[ $rc != 0 ]]; then
   echo -e "\033[0;31mError occured ...\033[0m"
