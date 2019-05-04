@@ -5,7 +5,7 @@
 ##  (Raspberry Pi - tested on Raspbian Stretch Lite - https://downloads.raspberrypi.org/raspbian_lite_latest)
 ##
 ## The easiest way to get the script on your machine is:
-## wget -O - https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh 2>/dev/null | bash
+## wget -O - https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh 2>/dev/null | bash -s <password>
 ## 
 ## 27/04/2019 Created initial script
 ##
@@ -468,6 +468,13 @@ get_config() {
 #############################################################################
 ##
 
+# check if argument has been provided
+if [[ $# -eq 0 ]]
+then
+    echo "No password supplied"
+    exit 1
+fi
+
 tput civis
 get_config
 
@@ -481,7 +488,7 @@ if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
     do_task "Save script to home directory" "wget -O $SCRIPTFILE https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh > $LOGFILE 2>&1"
     do_task "Change permissions on script" "chmod 700 $SCRIPTFILE > $LOGFILE 2>&1"
     do_task "Save source file to home directory" "wget -O $ENCSOURCEFILE  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh.enc > $LOGFILE 2>&1"
-    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $ENCSOURCEFILE -out $SOURCEFILE > $LOGFILE 2>&1"
+    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $ENCSOURCEFILE -out $SOURCEFILE -pass pass:$1> $LOGFILE 2>&1"
     do_task "Remove encrypted source file from home directory" "[ -f $ENCSOURCEFILE ] && rm -f $ENCSOURCEFILE || sleep 0.1 > $LOGFILE 2>&1"
     do_task "Change permissions on source file" "chmod 700 $SOURCEFILE > $LOGFILE 2>&1"
 fi
