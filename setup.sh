@@ -479,7 +479,7 @@ if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
     do_task "Change permissions on script" "chmod 700 $SCRIPTFILE > $LOGFILE 2>&1"
     do_task "Save source file to home directory" "wget -O $SOURCEFILE.enc  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh.enc > $LOGFILE 2>&1"
     do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $SOURCEFILE.enc -out $SOURCEFILE > $LOGFILE 2>&1"
-    do_task "Remove encrypted source file from home directory" "[ -f '$SOURCEFILE.enc' ] && rm -f $SOURCEFILE.enc || sleep 0.1> > $LOGFILE 2>&1"
+    do_task "Remove encrypted source file from home directory" "[ -f $SOURCEFILE.enc ] && rm -f $SOURCEFILE.enc || sleep 0.1> > $LOGFILE 2>&1"
     do_task "Change permissions on source file" "chmod 700 $SOURCEFILE > $LOGFILE 2>&1"
 fi
 
