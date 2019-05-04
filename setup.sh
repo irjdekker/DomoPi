@@ -188,7 +188,10 @@ do_install_domoticz() {
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     sudo sed -i 's/DAEMON_ARGS -log \/tmp\/domoticz.txt/DAEMON_ARGS -log \/tmp\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
-    sudo sed -i '/-loglevel=3/ s/^#//' /etc/locale.gen > $LOGFILE 2>&1
+    sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
+    
+    [ -f /home/pi/domoticz_install.sh ] && rm -f /home/pi/domoticz_install.sh $LOGFILE 2>&1"
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     
     print_task "Install Domoticz" 0 true
@@ -222,7 +225,7 @@ do_restore_database() {
 do_update_boot() {
     print_task "Update boot" -1 false
     
-    [ "$(sed -n '1{/console=serial0,115200/p};q' /boot/cmdline.txt)" ] || sudo sed -i "1 s|console=serial0,115200 ||" /boot/cmdline.txt
+    [ "$(sed -n '1{/console=serial0,115200/p};q' /boot/cmdline.txt)" ] && sudo sed -i "1 s|console=serial0,115200 ||" /boot/cmdline.txt
     if [ $? -ne 0 ]; then print_task "Update boot" 1 true ; fi
     [ "$(sed -n '1{/logo.nologo/p};q' /boot/cmdline.txt)" ] || sudo sed -i "1 s|$| logo.nologo|" /boot/cmdline.txt
     if [ $? -ne 0 ]; then print_task "Update boot" 1 true ; fi
@@ -647,13 +650,14 @@ if (( $STEP == 7 )) ; then
     # remove script/config file
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1 > $LOGFILE 2>&1"
     do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1> $LOGFILE 2>&1"
-    do_task "Remove source file from home directory" "[ -f $SOURCFILE ] && rm -f $SOURCFILE || sleep 0.1> $LOGFILE 2>&1" 
+    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1> $LOGFILE 2>&1" 
     
     # enable ssh
     do_ssh
     
     # reboot at end
     do_task "Reboot" "sleep 10 && reboot"
+    exit 0
 fi
 
 # used for test purposes
