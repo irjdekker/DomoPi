@@ -150,6 +150,54 @@ do_download_nefit() {
     print_task "Download nefit easy scripts" 0 true 
 }
 
+do_download_certificate() {
+    print_task "Download certificate scripts" -1 false
+    
+    mkdir -p /home/pi/certificate > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    
+    wget -O /home/pi/certificate/cf-auth.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-auth.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    wget -O /home/pi/certificate/cf-clean.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-clean.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    wget -O /home/pi/certificate/change_cert.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/change_cert.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    
+    sed -i "s/<CERT_PASSWD>/$CERT_PASSWD/" /home/pi/certificate/change_cert.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    sed -i "s/<CERT_API>/$CERT_API/" /home/pi/certificate/cf_auth.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    sed -i "s/<CERT_EMAIL>/$CERT_EMAIL/" /home/pi/certificate/cf_auth.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    sed -i "s/<CERT_API>/$CERT_API/" /home/pi/certificate/cf_clean.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+    sed -i "s/<CERT_EMAIL>/$CERT_EMAIL/" /home/pi/certificate/cf_clean.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi 
+    
+    chmod 755 /home/pi/certificate/*.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
+
+    print_task "Download certificate scripts" 0 true 
+}
+
+do_download_bluetooth() {
+    print_task "Download bluetooth scripts" -1 false
+    
+    mkdir -p /home/pi/bluetooth > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download bluetooth scripts" 1 true ; fi
+    
+    wget -O /home/pi/bluetooth/btlecheck.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/bluetooth/btlecheck.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download bluetooth scripts" 1 true ; fi
+    
+    sed -i "s/<BLUETOOTH_IP>/$BLUETOOTH_IP/" /home/pi/bluetooth/btlecheck.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download bluetooth scripts" 1 true ; fi
+    
+    chmod 755 /home/pi/bluetooth/*.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download bluetooth scripts" 1 true ; fi
+
+    print_task "Download bluetooth scripts" 0 true 
+}
+
 do_unattended_domoticz() {
     print_task "Configure unattended Domoticz" -1 false
     
@@ -191,7 +239,7 @@ do_install_domoticz() {
     sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     
-    [ -f /home/pi/domoticz_install.sh ] && rm -f /home/pi/domoticz_install.sh $LOGFILE 2>&1"
+    [ -f /home/pi/domoticz_install.sh ] && rm -f /home/pi/domoticz_install.sh $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     
     print_task "Install Domoticz" 0 true
@@ -545,6 +593,12 @@ if (( $STEP == 1 )) ; then
     # download hue scripts from github
     do_download_hue
     
+    # download certificate scripts from github
+    do_download_certificate
+    
+    # download bluetooth scripts from github
+    do_download_bluetooth
+    
     # change hostname
     do_change_hostname "domoticz"
 fi    
@@ -602,6 +656,9 @@ if (( $STEP == 5 )) ; then
 fi
 
 if (( $STEP == 6 )) ; then
+    # install let's encrypted
+    do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+    
     # install nodejs
     do_task "Install nodejs" "sudo apt-get -qq -y install nodejs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err" 
 
