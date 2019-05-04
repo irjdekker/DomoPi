@@ -160,18 +160,18 @@ do_download_certificate() {
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
     wget -O /home/pi/certificate/cf-clean.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-clean.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
-    wget -O /home/pi/certificate/change_cert.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/change_cert.sh > $LOGFILE 2>&1
+    wget -O /home/pi/certificate/change-cert.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/change-cert.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
     
-    sed -i "s/<CERT_PASSWD>/$CERT_PASSWD/" /home/pi/certificate/change_cert.sh > $LOGFILE 2>&1
+    sed -i "s/<CERT_PASSWD>/$CERT_PASSWD/" /home/pi/certificate/change-cert.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
-    sed -i "s/<CERT_API>/$CERT_API/" /home/pi/certificate/cf_auth.sh > $LOGFILE 2>&1
+    sed -i "s/<CERT_API>/$CERT_API/" /home/pi/certificate/cf-auth.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
-    sed -i "s/<CERT_EMAIL>/$CERT_EMAIL/" /home/pi/certificate/cf_auth.sh > $LOGFILE 2>&1
+    sed -i "s/<CERT_EMAIL>/$CERT_EMAIL/" /home/pi/certificate/cf-auth.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
-    sed -i "s/<CERT_API>/$CERT_API/" /home/pi/certificate/cf_clean.sh > $LOGFILE 2>&1
+    sed -i "s/<CERT_API>/$CERT_API/" /home/pi/certificate/cf-clean.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi
-    sed -i "s/<CERT_EMAIL>/$CERT_EMAIL/" /home/pi/certificate/cf_clean.sh > $LOGFILE 2>&1
+    sed -i "s/<CERT_EMAIL>/$CERT_EMAIL/" /home/pi/certificate/cf-clean.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download certificate scripts" 1 true ; fi 
     
     chmod 755 /home/pi/certificate/*.sh > $LOGFILE 2>&1
