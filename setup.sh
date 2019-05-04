@@ -468,18 +468,17 @@ get_config() {
 #############################################################################
 ##
 
-# check if argument has been provided
-if [[ $# -eq 0 ]]
-then
-    echo "No password supplied"
-    exit 1
-fi
-
 tput civis
 get_config
 
 # start script for beginning when just downloaded
 if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
+    # check if argument has been provided
+    if [[ $# -eq 0 ]]
+    then
+        echo "No password supplied"
+        exit 1
+    fi
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1 > $LOGFILE 2>&1"
     do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1> $LOGFILE 2>&1"
     do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1> $LOGFILE 2>&1"    
