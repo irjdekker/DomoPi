@@ -477,9 +477,9 @@ if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
     # save script in home directory
     do_task "Save script to home directory" "wget -O $SCRIPTFILE https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh > $LOGFILE 2>&1"
     do_task "Change permissions on script" "chmod 700 $SCRIPTFILE > $LOGFILE 2>&1"
-    do_task "Save source file to home directory" "wget -O $SOURCEFILE  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh > $LOGFILE 2>&1"
-    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $SOURCEFILE -out $SOURCEFILE.dec > $LOGFILE 2>&1"
-    do_task "Replace source file with decrypted version" "mv -f $SOURCEFILE.dec $SOURCEFILE > $LOGFILE 2>&1"
+    do_task "Save source file to home directory" "wget -O $SOURCEFILE.enc  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh.enc > $LOGFILE 2>&1"
+    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $SOURCEFILE.enc -out $SOURCEFILE > $LOGFILE 2>&1"
+    do_task "Remove encrypted source file from home directory" "[ -f '$SOURCEFILE.enc' ] && rm -f $SOURCEFILE.enc || sleep 0.1> > $LOGFILE 2>&1"
     do_task "Change permissions on source file" "chmod 700 $SOURCEFILE > $LOGFILE 2>&1"
 fi
 
