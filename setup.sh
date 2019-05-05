@@ -557,8 +557,7 @@ if (( $STEP == 1 )) ; then
     do_auto_login
 
     # add login script to .bashrc
-    # do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/pi/setup.sh' /home/pi/.bashrc || echo '/bin/bash /home/pi/setup.sh' >> /home/pi/.bashrc"
-    do_task "Add script to .bashrc" "grep -qxF 'wget -O - http://10.10.3.16/api/wakeuplight/ 2>/dev/null' /home/pi/.bashrc || echo 'wget -O - http://10.10.3.16/api/wakeuplight/ 2>/dev/null' >> /home/pi/.bashrc"
+    do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/pi/setup.sh' /home/pi/.bashrc || echo '/bin/bash /home/pi/setup.sh' >> /home/pi/.bashrc"
 
     # Update boot configuration
     do_update_boot
@@ -619,15 +618,15 @@ if (( $STEP == 2 )) ; then
 
     # remove unused packages
     do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge >> $LOGFILE 2>&1"
+
+    # install rpi-update package
+    # do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+
+    # update raspberry pi to latest kernel and boot
+    # do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update >> $LOGFILE 2>&1"
 fi
 
 if (( $STEP == 3 )) ; then
-    # update raspberry pi firmware
-    do_task "Install raspberry pi firmware updater" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
-    do_task "Update raspberry pi firmware" "sudo SKIP_WARNING=1 rpi-update >> $LOGFILE 2>&1"
-fi
-
-if (( $STEP == 4 )) ; then
     # configure keyboard (Logitech G11)
     do_configure_keyboard "pc105" "us"
 
@@ -644,7 +643,7 @@ if (( $STEP == 4 )) ; then
     do_task "Change LC_TYPE environment" "grep -qxF 'LC_TYPE=en_US.UTF-8' /etc/environment || echo 'LC_TYPE=en_US.UTF-8' | sudo tee -a /etc/environment >> $LOGFILE 2>&1"
 fi
 
-if (( $STEP == 5 )) ; then
+if (( $STEP == 4 )) ; then
     # create s3 backup folder
     do_task "Create s3 backup folder" "sudo mkdir -p /home/pi/s3/domoticz-backup >> $LOGFILE 2>&1"
 
@@ -658,7 +657,7 @@ if (( $STEP == 5 )) ; then
     do_fstab_s3fs
 fi
 
-if (( $STEP == 6 )) ; then
+if (( $STEP == 5 )) ; then
     # install let's encrypted
     do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
@@ -700,7 +699,7 @@ if (( $STEP == 6 )) ; then
     do_restore_database
 fi
 
-if (( $STEP == 7 )) ; then
+if (( $STEP == 6 )) ; then
     # remove auto login
     do_auto_login_removal
 
@@ -727,4 +726,4 @@ fi
 
 STEP=$(( $STEP + 1 ))
 echo "$LOGFILE $STEP" > $CONFIGFILE
-do_task "Reboot" "sleep 10 && exit"
+do_task "Reboot" "sleep 10 && reboot"
