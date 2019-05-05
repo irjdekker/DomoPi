@@ -234,14 +234,16 @@ do_install_domoticz() {
 
     sudo sed -i 's/DAEMON_ARGS -www 8080/DAEMON_ARGS -www 0/' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
-    sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert /home/pi/domoticz/letsencrypt_server_cert.pem' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
+    sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert \/home\/pi/domoticz\/letsencrypt_server_cert.pem' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     sudo sed -i 's/DAEMON_ARGS -log \/tmp\/domoticz.txt/DAEMON_ARGS -log \/tmp\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
 
-    [ -f /home/pi/domoticz_install.sh ] && rm -f /home/pi/domoticz_install.sh $LOGFILE 2>&1
+    sudo systemctl daemon-reload >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
+    [ -f /home/pi/domoticz_install.sh ] && rm -f /home/pi/domoticz_install.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
 
     print_task "Install Domoticz" 0 true
@@ -533,14 +535,14 @@ if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
         exit 1
     fi
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1 >> $LOGFILE 2>&1"
-    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1>> $LOGFILE 2>&1"
-    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1>> $LOGFILE 2>&1"
+    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1 >> $LOGFILE 2>&1"
+    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1 >> $LOGFILE 2>&1"
 
     # save script in home directory
     do_task "Save script to home directory" "wget -O $SCRIPTFILE https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh >> $LOGFILE 2>&1"
     do_task "Change permissions on script" "chmod 700 $SCRIPTFILE >> $LOGFILE 2>&1"
     do_task "Save source file to home directory" "wget -O $ENCSOURCEFILE  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh.enc >> $LOGFILE 2>&1"
-    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $ENCSOURCEFILE -out $SOURCEFILE -pass pass:$1>> $LOGFILE 2>&1"
+    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $ENCSOURCEFILE -out $SOURCEFILE -pass pass:$1 >> $LOGFILE 2>&1"
     do_task "Remove encrypted source file from home directory" "[ -f $ENCSOURCEFILE ] && rm -f $ENCSOURCEFILE || sleep 0.1 >> $LOGFILE 2>&1"
     do_task "Change permissions on source file" "chmod 700 $SOURCEFILE >> $LOGFILE 2>&1"
 fi
@@ -619,10 +621,10 @@ if (( $STEP == 2 )) ; then
     # remove unused packages
     do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge >> $LOGFILE 2>&1"
 
-    # install rpi-update package
+    # install rpi-update package (*** not required - creates network issue with hue ***)
     # do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # update raspberry pi to latest kernel and boot
+    # update raspberry pi to latest kernel and boot (*** not required - creates network issue with hue ***)
     # do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update >> $LOGFILE 2>&1"
 fi
 
@@ -658,6 +660,9 @@ if (( $STEP == 4 )) ; then
 fi
 
 if (( $STEP == 5 )) ; then
+    # autostart bluetooth script
+    do_task "Configure auto start for bluetooth script" "sudo sed -i 's/exit 0/\/home\/pi\/bt\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
+
     # install let's encrypted
     do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
@@ -685,8 +690,8 @@ if (( $STEP == 5 )) ; then
     # configure unattended Domoticz
     do_unattended_domoticz
 
-    # install required library
-    do_task "Install library for Domoticz" "sudo apt-get -qq -y install libusb-0.1-4 > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+    # install required packages
+    do_task "Install required packages for Domoticz" "sudo apt-get -qq -y install libusb-0.1-4 python3.5-dev > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
     # install Domoticz
     do_install_domoticz
@@ -697,6 +702,9 @@ if (( $STEP == 5 )) ; then
 
     # restore database
     do_restore_database
+
+    # install ssl certificate
+    do_task "Install ssl certificate" "/home/pi/certificate/change_cert.sh >> $LOGFILE 2>&1"
 fi
 
 if (( $STEP == 6 )) ; then
@@ -708,8 +716,8 @@ if (( $STEP == 6 )) ; then
 
     # remove script/config file
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1 >> $LOGFILE 2>&1"
-    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1>> $LOGFILE 2>&1"
-    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1>> $LOGFILE 2>&1"
+    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1 >> $LOGFILE 2>&1"
+    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1 >> $LOGFILE 2>&1"
 
     # enable ssh
     do_ssh
