@@ -234,6 +234,8 @@ do_install_domoticz() {
     
     sudo sed -i 's/DAEMON_ARGS -www 8080/DAEMON_ARGS -www 0/' /etc/init.d/domoticz.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
+    sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert /home/pi/domoticz/letsencrypt_server_cert.pem' /etc/init.d/domoticz.sh > $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi 
     sudo sed -i 's/DAEMON_ARGS -log \/tmp\/domoticz.txt/DAEMON_ARGS -log \/tmp\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh > $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh > $LOGFILE 2>&1
@@ -724,4 +726,4 @@ fi
 
 STEP=$(( $STEP + 1 ))
 echo "$LOGFILE $STEP" > $CONFIGFILE
-do_task "Reboot" "sleep 10 && reboot"
+do_task "Reboot" "sleep 10 && exit"
