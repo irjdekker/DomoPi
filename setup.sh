@@ -261,11 +261,20 @@ do_restore_database() {
     else
         print_task "Restore Domoticz database" 1 true
     fi
-
     sudo chmod 644 /home/pi/domoticz/domoticz.db >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Restore Domoticz database" 1 true ; fi
-
     sudo chown pi:pi /home/pi/domoticz/domoticz.db >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Restore Domoticz database" 1 true ; fi
+
+    if [ -f "/home/pi/s3/domoticz-backup/zwcfg_0xdaa30a14.xml" ]; then
+        sudo cp -f /home/pi/s3/domoticz-backup/zwcfg_0xdaa30a14.xml /home/pi/domoticz/Config/zwcfg_0xdaa30a14.xml >> $LOGFILE 2>&1
+        if [ $? -ne 0 ]; then print_task "Restore Domoticz database" 1 true ; fi
+    else
+        print_task "Restore Domoticz database" 1 true
+    fi
+    sudo chmod 640 /home/pi/domoticz/Config/zwcfg_0xdaa30a14.xml >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Restore Domoticz database" 1 true ; fi
+    sudo chown root:root /home/pi/domoticz/Config/zwcfg_0xdaa30a14.xml >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Restore Domoticz database" 1 true ; fi
 
     sudo service domoticz.sh start >> $LOGFILE 2>&1
