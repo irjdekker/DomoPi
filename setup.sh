@@ -719,7 +719,7 @@ if (( $STEP == 5 )) ; then
     do_restore_database
 
     # install ssl certificate
-    do_task "Install ssl certificate" "/home/pi/certificate/change_cert.sh >> $LOGFILE 2>&1"
+    do_task "Install ssl certificate" "/home/pi/certificate/change-cert.sh >> $LOGFILE 2>&1"
 fi
 
 if (( $STEP == 6 )) ; then
