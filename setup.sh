@@ -234,7 +234,7 @@ do_install_domoticz() {
 
     sudo sed -i 's/DAEMON_ARGS -www 8080/DAEMON_ARGS -www 0/' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
-    sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert \/home\/pi\/domoticz\/letsencrypt_server_cert.pem' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
+    sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert \/home\/pi\/domoticz\/letsencrypt_server_cert.pem/' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
     sudo sed -i 's/DAEMON_ARGS -log \/tmp\/domoticz.txt/DAEMON_ARGS -log \/tmp\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Install Domoticz" 1 true ; fi
@@ -287,6 +287,8 @@ do_update_boot() {
     print_task "Update boot" -1 false
 
     [ "$(sed -n '1{/console=serial0,115200/p};q' /boot/cmdline.txt)" ] && sudo sed -i "1 s|console=serial0,115200 ||" /boot/cmdline.txt
+    if [ $? -ne 0 ]; then print_task "Update boot" 1 true ; fi
+    [ "$(sed -n '1{/ipv6.disable=1/p};q' /boot/cmdline.txt)" ] || sudo sed -i "1 s|$| ipv6.disable=1|" /boot/cmdline.txt
     if [ $? -ne 0 ]; then print_task "Update boot" 1 true ; fi
     [ "$(sed -n '1{/logo.nologo/p};q' /boot/cmdline.txt)" ] || sudo sed -i "1 s|$| logo.nologo|" /boot/cmdline.txt
     if [ $? -ne 0 ]; then print_task "Update boot" 1 true ; fi
@@ -708,6 +710,10 @@ if (( $STEP == 5 )) ; then
     # update Domoticz to BETA
     do_task "Change folder" "cd /home/pi/domoticz >> $LOGFILE 2>&1"
     do_task "Update Domoticz to BETA release" "/home/pi/domoticz/updatebeta >> $LOGFILE 2>&1"
+
+    # install Mechanon theme
+    do_task "Change folder" "cd /home/pi/domoticz/www/styles >> $LOGFILE 2>&1"
+    do_task "Install Mechanon theme" "git clone https://github.com/EdddieN/machinon-domoticz_theme.git machinon >> $LOGFILE 2>&1"
 
     # restore database
     do_restore_database
