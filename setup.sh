@@ -116,7 +116,7 @@ do_download_hue() {
     sed -i "s/<STRIP_URL>/$STRIP_URL_ESCAPED/" /home/pi/hue/strip.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download hue scripts" 1 true ; fi
 
-    chmod 755 /home/pi/easy/*.sh >> $LOGFILE 2>&1
+    chmod 755 /home/pi/hue/*.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download hue scripts" 1 true ; fi
 
     print_task "Download hue scripts" 0 true
