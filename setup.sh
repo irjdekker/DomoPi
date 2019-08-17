@@ -13,8 +13,14 @@
 ## and after giving the script execute permission (sudo chmod 0744 /home/pi/setup.sh)
 ## you could run the file as ./setup.sh
 ##
+## Updates needed
+## - Remove history from both root and pi account
+## - Add public key to authorized key file
+## - Configure backup towards S3 (rotate file, use softlink)
+##
 ## ROUTINES
 ## Here at the beginning, a load of useful routines - see further down
+
 
 # High Intensity
 IRed='\e[0;31m'         # Red
