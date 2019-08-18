@@ -15,7 +15,7 @@
 ##
 ## Updates needed
 ## - Remove history from both root and pi account
-## - Add public key to authorized key file
+## - Add public key to authorized key file (done - testing required)
 ## - Configure backup towards S3 (rotate file, use softlink)
 ##
 ## ROUTINES
@@ -49,6 +49,24 @@ SCRIPTFILE=$HOME/setup.sh
 SOURCEFILE=$HOME/source.sh
 ENCSOURCEFILE="$SOURCEFILE.enc"
 SCRIPTNAME=$0
+
+do_ssh_key() {
+    print_task "Install SSH key" -1 false
+
+    mkdir -p /home/pi/.ssh >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Install SSH key" 1 true ; fi
+	
+	chmod 700 /home/pi/.ssh >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Install SSH key" 1 true ; fi
+
+    wget -O /home/pi/.ssh/authorized_keys https://raw.githubusercontent.com/irjdekker/DomoPi/master/ssh/authorized_keys >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Install SSH key" 1 true ; fi
+
+    chmod 600 /home/pi/.ssh/authorized_keys >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Install SSH key" 1 true ; fi
+
+    print_task "Install SSH key" 0 true
+}
 
 do_test_internet() {
     local COUNT=0
@@ -729,6 +747,9 @@ if (( $STEP == 5 )) ; then
 fi
 
 if (( $STEP == 6 )) ; then
+    # install ssh key
+	do_ssh_key
+	
     # remove auto login
     do_auto_login_removal
 
