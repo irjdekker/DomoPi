@@ -736,6 +736,12 @@ if (( $STEP == 5 )) ; then
 
     # configure autostart for pm2 (Production Process Manager)
     do_task "Configure autostart for pm2 (Production Process Manager)" "sudo pm2 startup systemd –u pi --hp /home/pi >> $LOGFILE 2>&1"
+	
+	# change openssl.cnf MinProtocol (for nefit easy server)
+	do_task "Change openssl.cnf MinProtocol" "sudo sed -i 's/\(MinProtocol *= *\).*/\1None /' /etc/ssl/openssl.cnf"
+	
+	# change openssl.cnf CipherString (for nefit easy server)
+	do_task "Change openssl.cnf CipherString" "sudo sed -i 's/\(CipherString *= *\).*/\1DEFAULT /' /etc/ssl/openssl.cnf"
 
     # install nefit easy server
     do_task "Install nefit easy server" "sudo npm install nefit-easy-http-server -g >> $LOGFILE 2>&1"
