@@ -222,6 +222,24 @@ do_download_bluetooth() {
     print_task "Download bluetooth scripts" 0 true
 }
 
+do_download_backup() {
+    print_task "Download backup scripts" -1 false
+
+    mkdir -p /home/pi/backup >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download backup scripts" 1 true ; fi
+
+    wget -O /home/pi/backup/backup.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/backup/backup.sh >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download backup scripts" 1 true ; fi
+
+    sed -i "s/<DOMOTICZ_IP>/$DOMOTICZ_IP/" /home/pi/backup/backup.sh >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download backup scripts" 1 true ; fi
+
+    chmod 755 /home/pi/backup/*.sh >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download backup scripts" 1 true ; fi
+
+    print_task "Download backup scripts" 0 true
+}
+
 do_unattended_domoticz() {
     print_task "Configure unattended Domoticz" -1 false
 
