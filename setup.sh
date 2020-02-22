@@ -655,6 +655,9 @@ if (( $STEP == 1 )) ; then
 
     # download bluetooth scripts from github
     do_download_bluetooth
+	
+    # download backup scripts from github
+    do_download_backup	
 
     # change hostname
     do_change_hostname "domoticz"
@@ -762,6 +765,9 @@ if (( $STEP == 5 )) ; then
 
     # install ssl certificate
     do_task "Install ssl certificate" "/home/pi/certificate/change-cert.sh >> $LOGFILE 2>&1"
+	
+	# configure daily backup
+	do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup >> $LOGFILE 2>&1"
 fi
 
 if (( $STEP == 6 )) ; then
