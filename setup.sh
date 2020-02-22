@@ -120,6 +120,24 @@ do_download_lua() {
     print_task "Download lua scripts" 0 true
 }
 
+do_download_python() {
+    print_task "Download python scripts" -1 false
+
+    mkdir -p /home/pi/domoticz/scripts/python >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download python scripts" 1 true ; fi
+
+    wget -O /home/pi/domoticz/scripts/python/checkZwJam.py https://raw.githubusercontent.com/irjdekker/DomoPi/master/python/checkZwJam.py >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download python scripts" 1 true ; fi
+
+    sed -i "s/<MAIN_TOKEN>/$MAIN_TOKEN/" /home/pi/domoticz/scripts/python/checkZwJam.py >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download python scripts" 1 true ; fi
+
+    chmod 755 /home/pi/domoticz/scripts/python/checkZwJam.py >> $LOGFILE 2>&1
+    if [ $? -ne 0 ]; then print_task "Download python scripts" 1 true ; fi
+
+    print_task "Download python scripts" 0 true
+}
+
 do_download_hue() {
     print_task "Download hue scripts" -1 false
 
