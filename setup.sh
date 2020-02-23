@@ -508,6 +508,81 @@ do_change_locale() {
     print_task "Configure locale" 0 true
 }
 
+do_configure_postfix() {
+    print_task "Configure Postfix" -1 false
+	
+	sudo postconf -e "relayhost = smtp.gmail.com:587" >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+	
+	sudo postconf -e "smtp_sasl_auth_enable = yes" >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+	
+	sudo postconf -e "smtp_sasl_password_maps = hash:/etc/postfix/sasl/sasl_passwd" >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+
+	sudo postconf -e "smtp_sasl_security_options = noanonymous" >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+
+	sudo postconf -e "smtp_tls_security_level = may" >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+
+	sudo postconf -e "header_size_limit = 4096000" >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+
+	echo "$POSTFIX_PASSWD" | sudo tee -a /etc/postfix/sasl/sasl_passwd >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+	
+	sudo postmap /etc/postfix/sasl/sasl_passwd >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+	
+	sudo chown root:root /etc/postfix/sasl/sasl_passwd /etc/postfix/sasl/sasl_passwd.db >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+	
+	sudo chmod 600 /etc/postfix/sasl/sasl_passwd /etc/postfix/sasl/sasl_passwd.db >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+	
+	sudo service postfix reload >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+
+	sudo systemctl restart postfix >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure Postfix" 1 true ; fi
+	
+    print_task "Configure Postfix" 0 true
+}
+
+do_configure_unattended() {
+    print_task "Configure unattended upgrades" -1 false
+	
+	sudo sed -i 's/\/\/\( \+"origin=Debian,codename=${distro_codename}-updates";\)/  \1/' /etc/apt/apt.conf.d/50unattended-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; fi
+	
+	sudo sed -i 's/\/\/\(Unattended-Upgrade::Mail \+\).*/\1"ir.j.dekker@gmail.com";/' /etc/apt/apt.conf.d/50unattended-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; fi
+	
+	sudo sed -i 's/\/\/\(Unattended-Upgrade::MailOnlyOnError \+\).*/\1"true";/' /etc/apt/apt.conf.d/50unattended-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; fi
+	
+	sudo sed -i 's/\/\/\(Unattended-Upgrade::Remove-Unused-Kernel-Packages \+\).*/\1"true";/' /etc/apt/apt.conf.d/50unattended-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; file	
+	
+	sudo sed -i 's/\/\/\(Unattended-Upgrade::Remove-Unused-Dependencies \+\).*/\1"true";/' /etc/apt/apt.conf.d/50unattended-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; file	
+	
+	sudo sed -i 's/\/\/\(Unattended-Upgrade::Automatic-Reboot \+\).*/\1"false";/' /etc/apt/apt.conf.d/50unattended-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; file
+	
+	sudo sed -i 's/\/\/\(Unattended-Upgrade::Automatic-Reboot-Time \+\).*/\1"02:00";/' /etc/apt/apt.conf.d/50unattended-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; file
+	
+	echo 'APT::Periodic::Download-Upgradeable-Packages "1";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; file
+	
+	echo 'APT::Periodic::AutocleanInterval "7";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades >> $LOGFILE 2>&1
+	if [ $? -ne 0 ]; then print_task "Configure unattended upgrades" 1 true ; file
+	
+	print_task "Configure unattended upgrades" 0 true
+}
+
 do_configure_keyboard() {
     local MODEL="$1"
     local LAYOUT="$2"
@@ -798,6 +873,20 @@ if (( $STEP == 5 )) ; then
 	
 	# configure daily backup
 	do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup >> $LOGFILE 2>&1"
+	
+	# install postfix
+	do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
+	do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/main_mailer_type string Internet Site'"
+    do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+	
+	# configure postfix
+	do_configure_postfix
+	
+	# install unattended-upgrades
+    do_task "Install unattended-upgrades" "sudo apt-get -qq -y install unattended-upgrades > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+	
+	# configure unattended-upgrades
+	do_configure_unattended
 fi
 
 if (( $STEP == 6 )) ; then
