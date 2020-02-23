@@ -129,7 +129,7 @@ do_download_python() {
     wget -O /home/pi/domoticz/scripts/python/checkZwJam.py https://raw.githubusercontent.com/irjdekker/DomoPi/master/python/checkZwJam.py >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download python scripts" 1 true ; fi
 
-    sed -i "s/<MAIN_TOKEN>/$MAIN_TOKEN/" /home/pi/domoticz/scripts/python/checkZwJam.py >> $LOGFILE 2>&1
+    sed -i "s/<CHECK_URL>/$CHECK_URL/" /home/pi/domoticz/scripts/python/checkZwJam.py >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download python scripts" 1 true ; fi
 
     chmod 755 /home/pi/domoticz/scripts/python/checkZwJam.py >> $LOGFILE 2>&1
@@ -661,6 +661,9 @@ if (( $STEP == 1 )) ; then
 
     # download lua scripts from github
     do_download_lua
+	
+	# download python scripts from github
+	do_download_python
 
     # download nefit scripts from github
     do_download_nefit
@@ -696,10 +699,10 @@ if (( $STEP == 2 )) ; then
     do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge >> $LOGFILE 2>&1"
 
     # install rpi-update package (*** not required - creates network issue with hue ***)
-    # do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+    do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
     # update raspberry pi to latest kernel and boot (*** not required - creates network issue with hue ***)
-    # do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update >> $LOGFILE 2>&1"
+    do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update >> $LOGFILE 2>&1"
 fi
 
 if (( $STEP == 3 )) ; then
@@ -736,6 +739,9 @@ fi
 if (( $STEP == 5 )) ; then
     # autostart bluetooth script
     do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/pi\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
+	
+	# install python-requests
+    do_task "Install python-requests" "sudo apt-get -qq -y install python-requests > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
     # install let's encrypted
     do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
