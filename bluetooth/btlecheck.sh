@@ -29,7 +29,7 @@ do
   shift
 done
 
-SERVER="<BLUETOOTH_IP>"
+SERVER="<DOMOTICZ_IP>"
 PORT="443"
 CHECK=0
 

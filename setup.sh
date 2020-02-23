@@ -231,7 +231,7 @@ do_download_bluetooth() {
     wget -O /home/pi/bluetooth/btlecheck.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/bluetooth/btlecheck.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download bluetooth scripts" 1 true ; fi
 
-    sed -i "s/<BLUETOOTH_IP>/$BLUETOOTH_IP/" /home/pi/bluetooth/btlecheck.sh >> $LOGFILE 2>&1
+    sed -i "s/<BLUETOOTH_IP>/$DOMOTICZ_IP/" /home/pi/bluetooth/btlecheck.sh >> $LOGFILE 2>&1
     if [ $? -ne 0 ]; then print_task "Download bluetooth scripts" 1 true ; fi
 
     chmod 755 /home/pi/bluetooth/*.sh >> $LOGFILE 2>&1
