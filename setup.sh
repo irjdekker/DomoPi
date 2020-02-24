@@ -172,7 +172,7 @@ do_download_backup() {
     wget -O /home/pi/backup/backup.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/backup/backup.sh >> "$LOGFILE" 2>&1 || print_task "Download backup scripts" 1 true
     sed -i "s/<DOMOTICZ_IP>/$DOMOTICZ_IP/" /home/pi/backup/backup.sh >> "$LOGFILE" 2>&1 || print_task "Download backup scripts" 1 true
     chmod 755 /home/pi/backup/*.sh >> "$LOGFILE" 2>&1 || print_task "Download backup scripts" 1 true
-	
+
     print_task "Download backup scripts" 0 true
 }
 
@@ -224,7 +224,7 @@ do_restore_database() {
     else
         print_task "Restore Domoticz database" 1 true
     fi
-	
+
     sudo chmod 644 /home/pi/domoticz/domoticz.db >> "$LOGFILE" 2>&1 || print_task "Restore Domoticz database" 1 true
     sudo chown pi:pi /home/pi/domoticz/domoticz.db >> "$LOGFILE" 2>&1 || print_task "Restore Domoticz database" 1 true
 
@@ -233,7 +233,7 @@ do_restore_database() {
     else
         print_task "Restore Domoticz database" 1 true
     fi
-	
+
     sudo chmod 640 /home/pi/domoticz/Config/ozwcache_0xdaa30a14.xml >> "$LOGFILE" 2>&1 || print_task "Restore Domoticz database" 1 true
     sudo chown root:root /home/pi/domoticz/Config/ozwcache_0xdaa30a14.xml >> "$LOGFILE" 2>&1 || print_task "Restore Domoticz database" 1 true
     sudo service domoticz.sh start >> "$LOGFILE" 2>&1 || print_task "Restore Domoticz database" 1 true
@@ -314,8 +314,7 @@ do_ssh() {
 
 # run as root
 do_change_passwd() {
-    do_task "$MESSAGE" "echo 'pi:level42' | sudo -S /usr/sbin/chpasswd"
-    #if ! sudo sh -c "echo 'pi:$SETUP_PASSWD' | chpasswd" >> "$LOGFILE" 2>&1; then print_task "$MESSAGE" 1 true; fi
+    do_function_task "$MESSAGE" "echo 'pi:$SETUP_PASSWD' | sudo -S /usr/sbin/chpasswd"
 }
 
 # run as root
@@ -491,6 +490,12 @@ do_task() {
     fi
 }
 
+do_function_task() {
+	if ! run_cmd "$2"; then
+        print_task "$1" 1 true
+    fi
+}
+
 do_function() {
     MESSAGE="$1"
 
@@ -528,9 +533,7 @@ if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
         echo "No password supplied"
         exit 1
     fi
-	do_function "Change password for account pi" "do_change_passwd"
-	exit 1
-	
+
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
     do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
     do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
@@ -551,6 +554,7 @@ do_function "Test internet connection" "do_test_internet"
 if (( STEP == 1 )) ; then
     # change pi password
 	do_function "Change password for account pi" "do_change_passwd"
+    exit 1
 
     # setup auto login
     do_auto_login
