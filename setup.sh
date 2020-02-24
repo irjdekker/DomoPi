@@ -39,15 +39,6 @@ SOURCEFILE="$HOME/source.sh"
 ENCSOURCEFILE="$SOURCEFILE.enc"
 SCRIPTNAME="$0"
 
-do_function() {
-    local FUNCTION="$1"
-    MESSAGE="$2"
-
-	print_task "$MESSAGE" -1 false
-    eval "$FUNCTION"
-	print_task "$MESSAGE" 0 true
-}
-
 # run as pi
 do_ssh_key() {
     MESSAGE="Install SSH key"
@@ -60,6 +51,7 @@ do_ssh_key() {
     print_task "$MESSAGE" 0 true
 }
 
+# run as pi
 do_test_internet() {
     local COUNT=0
 
@@ -70,22 +62,6 @@ do_test_internet() {
         COUNT=$(( COUNT + 1 ))
         if (( COUNT == 3 )) ; then print_task "$MESSAGE" 1 true ; fi
     done
-}
-
-# run as pi
-do_test_internet_bak() {
-    MESSAGE="Test internet connection"
-    local COUNT=0
-
-    print_task "$MESSAGE" -1 false
-    while true; do
-        run_cmd "ping -c 1 8.8.8.8 > /tmp/setup.err 2>&1 && ! grep -q '100%' /tmp/setup.err" && break
-        sleep 10
-
-        COUNT=$(( COUNT + 1 ))
-        if (( COUNT == 3 )) ; then print_task "$MESSAGE" 1 true ; fi
-    done
-    print_task "$MESSAGE" 0 true
 }
 
 # run as root
@@ -338,11 +314,8 @@ do_ssh() {
 
 # run as root
 do_change_passwd() {
-    print_task "Change password for account pi" -1 false
-
-    sudo sh -c "echo 'pi:$SETUP_PASSWD' | chpasswd" >> "$LOGFILE" 2>&1 || print_task "Change password for account pi" 1 true
-
-    print_task "Change password for account pi" 0 true
+    do_task "$MESSAGE" "echo 'pi:level42' | sudo -S /usr/sbin/chpasswd"
+    #if ! sudo sh -c "echo 'pi:$SETUP_PASSWD' | chpasswd" >> "$LOGFILE" 2>&1; then print_task "$MESSAGE" 1 true; fi
 }
 
 # run as root
@@ -502,7 +475,7 @@ print_task() {
 }
 
 run_cmd() {
-    if eval "$@"; then
+    if eval "$@" >> "$LOGFILE" 2>&1; then
         return 0
     else
         return 1
@@ -516,6 +489,14 @@ do_task() {
     else
         print_task "$1" 1 true
     fi
+}
+
+do_function() {
+    MESSAGE="$1"
+
+	print_task "$1" -1 false
+    eval "$2"
+	print_task "$1" 0 true
 }
 
 get_config() {
@@ -547,29 +528,29 @@ if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
         echo "No password supplied"
         exit 1
     fi
-	do_function "do_test_internet" "Test internet connection"
+	do_function "Change password for account pi" "do_change_passwd"
 	exit 1
 	
-    do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1 >> $LOGFILE 2>&1"
-    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1 >> $LOGFILE 2>&1"
-    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1 >> $LOGFILE 2>&1"
+    do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
+    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
+    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
 
     # save script in home directory
-    do_task "Save script to home directory" "wget -O $SCRIPTFILE https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh >> $LOGFILE 2>&1"
-    do_task "Change permissions on script" "chmod 700 $SCRIPTFILE >> $LOGFILE 2>&1"
-    do_task "Save source file to home directory" "wget -O $ENCSOURCEFILE  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh.enc >> $LOGFILE 2>&1"
-    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $ENCSOURCEFILE -out $SOURCEFILE -pass pass:$1 >> $LOGFILE 2>&1"
-    do_task "Remove encrypted source file from home directory" "[ -f $ENCSOURCEFILE ] && rm -f $ENCSOURCEFILE || sleep 0.1 >> $LOGFILE 2>&1"
-    do_task "Change permissions on source file" "chmod 700 $SOURCEFILE >> $LOGFILE 2>&1"
+    do_task "Save script to home directory" "wget -O $SCRIPTFILE https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh"
+    do_task "Change permissions on script" "chmod 700 $SCRIPTFILE"
+    do_task "Save source file to home directory" "wget -O $ENCSOURCEFILE  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh.enc"
+    do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $ENCSOURCEFILE -out $SOURCEFILE -pass pass:$1"
+    do_task "Remove encrypted source file from home directory" "[ -f $ENCSOURCEFILE ] && rm -f $ENCSOURCEFILE || sleep 0.1"
+    do_task "Change permissions on source file" "chmod 700 $SOURCEFILE"
 fi
 
 # test internet connection
-do_test_internet
+do_function "Test internet connection" "do_test_internet"
 [ -f "$SOURCEFILE" ] && source "$SOURCEFILE"
 
 if (( STEP == 1 )) ; then
     # change pi password
-    do_change_passwd
+	do_function "Change password for account pi" "do_change_passwd"
 
     # setup auto login
     do_auto_login
@@ -581,25 +562,25 @@ if (( STEP == 1 )) ; then
     do_update_boot
 
     # disable splash screen
-    do_task "Disable splash screen" "grep -qxF 'disable_splash=1' /boot/config.txt || echo 'disable_splash=1' | sudo tee -a /boot/config.txt >> $LOGFILE 2>&1"
+    do_task "Disable splash screen" "grep -qxF 'disable_splash=1' /boot/config.txt || echo 'disable_splash=1' | sudo tee -a /boot/config.txt"
 
     # disable warnings
-    do_task "Disable warnings" "grep -qxF 'avoid_warnings=1' /boot/config.txt || echo 'avoid_warnings=1' | sudo tee -a /boot/config.txt >> $LOGFILE 2>&1"
+    do_task "Disable warnings" "grep -qxF 'avoid_warnings=1' /boot/config.txt || echo 'avoid_warnings=1' | sudo tee -a /boot/config.txt"
 
     # disable WiFi
-    do_task "Disable onboard WiFi" "grep -qxF 'dtoverlay=pi3-disable-wifi' /boot/config.txt || echo 'dtoverlay=pi3-disable-wifi' | sudo tee -a /boot/config.txt >> $LOGFILE 2>&1"
+    do_task "Disable onboard WiFi" "grep -qxF 'dtoverlay=pi3-disable-wifi' /boot/config.txt || echo 'dtoverlay=pi3-disable-wifi' | sudo tee -a /boot/config.txt"
 
     # disable onboard bluetooth
-    do_task "Disable onboard Bluetooth" "grep -qxF 'dtoverlay=pi3-disable-bt' /boot/config.txt || echo 'dtoverlay=pi3-disable-bt' | sudo tee -a /boot/config.txt >> $LOGFILE 2>&1"
+    do_task "Disable onboard Bluetooth" "grep -qxF 'dtoverlay=pi3-disable-bt' /boot/config.txt || echo 'dtoverlay=pi3-disable-bt' | sudo tee -a /boot/config.txt"
 
     # disable plymouth
-    do_task "Disable Plymouth" "sudo systemctl mask plymouth-start.service >> $LOGFILE 2>&1"
+    do_task "Disable Plymouth" "sudo systemctl mask plymouth-start.service"
 
     # disable hciuart
-    do_task "Disable hciuart" "sudo systemctl disable hciuart >> $LOGFILE 2>&1"
+    do_task "Disable hciuart" "sudo systemctl disable hciuart"
 
     # change baud rate
-    do_task "Set baud rate to 9600" "sudo stty -F /dev/ttyAMA0 9600 >> $LOGFILE 2>&1"
+    do_task "Set baud rate to 9600" "sudo stty -F /dev/ttyAMA0 9600"
 
     # enable RAM drive
     do_fstab
@@ -638,16 +619,16 @@ if (( STEP == 2 )) ; then
     do_task "Upgrade raspberry pi" "sudo apt-get -qq -y dist-upgrade > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
     # mark all libraries as autoinstalled
-    do_task "Mark libraries as autoinstalled" "sudo dpkg-query -Wf '\${binary:Package}\n' 'lib*[!raspberrypi-bin]' | sudo xargs apt-mark auto >> $LOGFILE 2>&1"
+    do_task "Mark libraries as autoinstalled" "sudo dpkg-query -Wf '\${binary:Package}\n' 'lib*[!raspberrypi-bin]' | sudo xargs apt-mark auto"
 
     # remove unused packages
-    do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge >> $LOGFILE 2>&1"
+    do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge"
 
     # install rpi-update package (*** not required - creates network issue with hue ***)
     do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
     # update raspberry pi to latest kernel and boot (*** not required - creates network issue with hue ***)
-    do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update >> $LOGFILE 2>&1"
+    do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update"
 fi
 
 if (( STEP == 3 )) ; then
@@ -661,15 +642,15 @@ if (( STEP == 3 )) ; then
     do_change_locale "en_US.UTF-8"
 
     # change default language environment
-    do_task "Change LANGUAGE environment" "grep -qxF 'LANGUAGE=en_US.UTF-8' /etc/environment || echo 'LANGUAGE=en_US.UTF-8' | sudo tee -a /etc/environment >> $LOGFILE 2>&1"
-    do_task "Change LC_ALL environment" "grep -qxF 'LC_ALL=en_US.UTF-8' /etc/environment || echo 'LC_ALL=en_US.UTF-8' | sudo tee -a /etc/environment >> $LOGFILE 2>&1"
-    do_task "Change LANG environment" "grep -qxF 'LANG=en_US.UTF-8' /etc/environment || echo 'LANG=en_US.UTF-8' | sudo tee -a /etc/environment >> $LOGFILE 2>&1"
-    do_task "Change LC_TYPE environment" "grep -qxF 'LC_TYPE=en_US.UTF-8' /etc/environment || echo 'LC_TYPE=en_US.UTF-8' | sudo tee -a /etc/environment >> $LOGFILE 2>&1"
+    do_task "Change LANGUAGE environment" "grep -qxF 'LANGUAGE=en_US.UTF-8' /etc/environment || echo 'LANGUAGE=en_US.UTF-8' | sudo tee -a /etc/environment"
+    do_task "Change LC_ALL environment" "grep -qxF 'LC_ALL=en_US.UTF-8' /etc/environment || echo 'LC_ALL=en_US.UTF-8' | sudo tee -a /etc/environment"
+    do_task "Change LANG environment" "grep -qxF 'LANG=en_US.UTF-8' /etc/environment || echo 'LANG=en_US.UTF-8' | sudo tee -a /etc/environment"
+    do_task "Change LC_TYPE environment" "grep -qxF 'LC_TYPE=en_US.UTF-8' /etc/environment || echo 'LC_TYPE=en_US.UTF-8' | sudo tee -a /etc/environment"
 fi
 
 if (( STEP == 4 )) ; then
     # create s3 backup folder
-    do_task "Create s3 backup folder" "sudo mkdir -p /home/pi/s3/domoticz-backup >> $LOGFILE 2>&1"
+    do_task "Create s3 backup folder" "sudo mkdir -p /home/pi/s3/domoticz-backup"
 
     # install s3fs
     do_task "Install s3fs" "sudo apt-get -qq -y install s3fs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
@@ -698,13 +679,13 @@ if (( STEP == 5 )) ; then
     do_task "Install npm (Node Package Manager)" "sudo apt-get -qq -y install npm > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
     # update npm (Node Package Manager)
-    do_task "Update npm (Node Package Manager)" "sudo npm install npm@latest -g >> $LOGFILE 2>&1"
+    do_task "Update npm (Node Package Manager)" "sudo npm install npm@latest -g"
 
     # install pm2 (Production Process Manager)
-    do_task "Install pm2 (Production Process Manager)" "sudo npm install pm2@latest -g >> $LOGFILE 2>&1"
+    do_task "Install pm2 (Production Process Manager)" "sudo npm install pm2@latest -g"
 
     # configure autostart for pm2 (Production Process Manager)
-    do_task "Configure autostart for pm2 (Production Process Manager)" "sudo pm2 startup systemd –u pi --hp /home/pi >> $LOGFILE 2>&1"
+    do_task "Configure autostart for pm2 (Production Process Manager)" "sudo pm2 startup systemd –u pi --hp /home/pi"
 
     # change openssl.cnf MinProtocol (for nefit easy server)
     do_task "Change openssl.cnf MinProtocol" "sudo sed -i 's/\(MinProtocol *= *\).*/\1None /' /etc/ssl/openssl.cnf"
@@ -713,10 +694,10 @@ if (( STEP == 5 )) ; then
     do_task "Change openssl.cnf CipherString" "sudo sed -i 's/\(CipherString *= *\).*/\1DEFAULT /' /etc/ssl/openssl.cnf"
 
     # install nefit easy server
-    do_task "Install nefit easy server" "sudo npm install nefit-easy-http-server -g >> $LOGFILE 2>&1"
+    do_task "Install nefit easy server" "sudo npm install nefit-easy-http-server -g"
 
     # configure autostart for nefit easy server
-    do_task "Start for nefit easy server" "/home/pi/easy/easy-start.sh >> $LOGFILE 2>&1"
+    do_task "Start for nefit easy server" "/home/pi/easy/easy-start.sh"
 
     # configure unattended Domoticz
     do_unattended_domoticz
@@ -728,21 +709,21 @@ if (( STEP == 5 )) ; then
     do_install_domoticz
 
     # update Domoticz to BETA
-    do_task "Change folder" "cd /home/pi/domoticz >> $LOGFILE 2>&1"
-    do_task "Update Domoticz to BETA release" "/home/pi/domoticz/updatebeta >> $LOGFILE 2>&1"
+    do_task "Change folder" "cd /home/pi/domoticz"
+    do_task "Update Domoticz to BETA release" "/home/pi/domoticz/updatebeta"
 
     # install Mechanon theme
-    do_task "Change folder" "cd /home/pi/domoticz/www/styles >> $LOGFILE 2>&1"
-    do_task "Install Mechanon theme" "git clone https://github.com/EdddieN/machinon-domoticz_theme.git machinon >> $LOGFILE 2>&1"
+    do_task "Change folder" "cd /home/pi/domoticz/www/styles"
+    do_task "Install Mechanon theme" "git clone https://github.com/EdddieN/machinon-domoticz_theme.git machinon"
 
     # restore database
     do_restore_database
 
     # install ssl certificate
-    do_task "Install ssl certificate" "/home/pi/certificate/change-cert.sh >> $LOGFILE 2>&1"
+    do_task "Install ssl certificate" "/home/pi/certificate/change-cert.sh"
 
     # configure daily backup
-    do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup >> $LOGFILE 2>&1"
+    do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup"
 
     # install postfix
     do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
@@ -770,9 +751,9 @@ if (( STEP == 6 )) ; then
     do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/pi\/setup.sh/d' /home/pi/.bashrc"
 
     # remove script/config file
-    do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1 >> $LOGFILE 2>&1"
-    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1 >> $LOGFILE 2>&1"
-    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1 >> $LOGFILE 2>&1"
+    do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
+    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
+    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
 
     # enable ssh
     do_ssh
