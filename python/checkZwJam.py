@@ -25,7 +25,7 @@ import datetime
 logLevel='DEBUG' # DEBUG / INFO
 
 # Domoticz json API url
-dmtJurl         = 'https://domoticz.tanix.nl/json.htm?'
+dmtJurl         = '<CHECK_URL>'
 
 # Command parameters in json format (only change if API change!)
 dmtJsonGetZwNodes = {"type":"openzwavenodes", "idx":"999"}
