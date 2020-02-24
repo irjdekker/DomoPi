@@ -63,7 +63,6 @@ do_ssh_key() {
 do_test_internet() {
     local COUNT=0
 
-    print_task "$MESSAGE" -1 false
     while true; do
         run_cmd "ping -c 1 8.8.8.8 > /tmp/setup.err 2>&1 && ! grep -q '100%' /tmp/setup.err" && break
         sleep 10
@@ -494,7 +493,7 @@ print_task() {
         PRINTTEXT+="\n"
     fi
 
-    printf "$PRINTTEXT"
+    printf "%b" "$PRINTTEXT"
 
     if (( STATUS == 1 )); then
         tput cvvis
