@@ -494,7 +494,7 @@ print_task() {
         PRINTTEXT+="\n"
     fi
 
-    printf "%s" "$PRINTTEXT"
+    printf "$PRINTTEXT"
 
     if (( STATUS == 1 )); then
         tput cvvis
