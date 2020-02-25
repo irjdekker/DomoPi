@@ -51,7 +51,6 @@ do_ssh_key() {
     print_task "$MESSAGE" 0 true
 }
 
-# run as pi
 do_test_internet() {
     local COUNT=0
 
@@ -300,19 +299,13 @@ EOF' >> "$LOGFILE" 2>&1 || print_task "Disable additional packages (apt)" 1 true
     print_task "Disable additional packages (apt)" 0 true
 }
 
-# run as root
 do_ssh() {
-    print_task "Enable SSH" -1 false
-
-    if ! sudo pstree -p | grep -q -E ".*sshd.*\($$\)" >> "$LOGFILE" 2>&1; then
-        sudo update-rc.d ssh enable >> "$LOGFILE" 2>&1 || print_task "Enable SSH" 1 true
-        sudo invoke-rc.d ssh start >> "$LOGFILE" 2>&1 print_task "Enable SSH" 1 true
+    if ! run_cmd "sudo pstree -p | grep -q -E \".*sshd.*\($$\)\""; then
+        do_function_task "$MESSAGE" "sudo update-rc.d ssh enable"
+		do_function_task "$MESSAGE" "sudo invoke-rc.d ssh start"
     fi
-
-    print_task "Enable SSH" 0 true
 }
 
-# run as root
 do_change_passwd() {
     do_function_task "$MESSAGE" "echo 'pi:$SETUP_PASSWD' | sudo -S /usr/sbin/chpasswd"
 }
@@ -334,40 +327,23 @@ do_change_hostname() {
     print_task "Change hostname" 0 true
 }
 
-# run as root
 do_auto_login() {
-    print_task "Configure auto login" -1 false
-
-    sudo systemctl set-default multi-user.target >> "$LOGFILE" 2>&1 || print_task "Configure auto login" 1 true
-    sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service >> "$LOGFILE" 2>&1 || print_task "Configure auto login" 1 true
-    sudo sh -c 'cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin pi --noclear %I linux
-EOF' >> "$LOGFILE" 2>&1 || print_task "Configure auto login" 1 true
-
-    print_task "Configure auto login" 0 true
+    do_function_task "$MESSAGE" "sudo systemctl set-default multi-user.target"
+    do_function_task "$MESSAGE" "sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service"
+	do_function_task "$MESSAGE" "echo \"[Service]\" | sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
+	do_function_task "$MESSAGE" "echo \"ExecStart=\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
+	do_function_task "$MESSAGE" "echo \"ExecStart=-/sbin/agetty --autologin pi --noclear %I linux\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
 }
 
-# run as root
 do_auto_login_removal() {
-    print_task "Remove auto login" -1 false
-
-    sudo systemctl set-default multi-user.target >> "$LOGFILE" 2>&1 || print_task "Remove auto login" 1 true
-    sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service >> "$LOGFILE" 2>&1 || print_task "Remove auto login" 1 true
-    sudo rm /etc/systemd/system/getty@tty1.service.d/autologin.conf >> "$LOGFILE" 2>&1 || print_task "Remove auto login" 1 true
-
-    print_task "Remove auto login" 0 true
+    do_function_task "$MESSAGE" "sudo systemctl set-default multi-user.target"
+    do_function_task "$MESSAGE" "sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service"
+	do_function_task "$MESSAGE" "sudo rm /etc/systemd/system/getty@tty1.service.d/autologin.conf"
 }
 
-# run as root
 do_change_timezone() {
-    print_task "Change timezone" -1 false
-
-    sudo ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime >> "$LOGFILE" 2>&1 || print_task "Change timezone" 1 true
-    sudo dpkg-reconfigure -f noninteractive tzdata >> "$LOGFILE" 2>&1 || print_task "Change timezone" 1 true
-
-    print_task "Change timezone" 0 true
+    do_function_task "$MESSAGE" "sudo ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime"
+	do_function_task "$MESSAGE" "sudo dpkg-reconfigure -f noninteractive tzdata"
 }
 
 # run as root
@@ -554,10 +530,11 @@ do_function "Test internet connection" "do_test_internet"
 if (( STEP == 1 )) ; then
     # change pi password
 	do_function "Change password for account pi" "do_change_passwd"
-    exit 1
 
     # setup auto login
-    do_auto_login
+    do_function "Configure auto login" "do_auto_login"
+	tput cvvis
+	exit 1
 
     # add login script to .bashrc
     do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/pi/setup.sh' /home/pi/.bashrc || echo '/bin/bash /home/pi/setup.sh' >> /home/pi/.bashrc"
