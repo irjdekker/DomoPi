@@ -41,7 +41,6 @@ SOURCEFILE="$HOME/source.sh"
 ENCSOURCEFILE="$SOURCEFILE.enc"
 SCRIPTNAME="$0"
 
-# changed to new setup
 do_test_internet() {
     local COUNT=0
 
@@ -54,12 +53,10 @@ do_test_internet() {
     done
 }
 
-# changed to new setup
 do_change_passwd() {
     do_function_task "echo 'pi:$SETUP_PASSWD' | sudo -S /usr/sbin/chpasswd"
 }
 
-# changed to new setup
 do_auto_login() {
     do_function_task "sudo systemctl set-default multi-user.target"
     do_function_task "sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service"
@@ -68,7 +65,6 @@ do_auto_login() {
     do_function_task "echo \"ExecStart=-/sbin/agetty --autologin pi --noclear %I linux\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
 }
 
-# changed to new setup
 do_update_boot() {
     if [ "$(sed -n '1{/console=serial0,115200/p};q' /boot/cmdline.txt)" ]; then
         do_function_task "sudo sed -i \"1 s|console=serial0,115200 ||\" /boot/cmdline.txt"
@@ -87,14 +83,12 @@ do_update_boot() {
     fi
 }
 
-# changed to new setup
 do_fstab() {
     do_function_task "echo \"tmpfs   /tmp                tmpfs   defaults,noatime,nosuid,size=100m 0 0\" | sudo tee -a /etc/fstab > /dev/null"
     do_function_task "echo \"tmpfs   /var/tmp            tmpfs   defaults,noatime,nosuid,size=30m 0 0\" | sudo tee -a /etc/fstab > /dev/null"
     do_function_task "echo \"tmpfs   /var/log            tmpfs   defaults,noatime,nosuid,mode=0755,size=100m 0 0\" | sudo tee -a /etc/fstab > /dev/null"
 }
 
-# changed to new setup
 do_download_lua() {
     do_function_task "mkdir -p /home/pi/domoticz/scripts/lua"
     do_function_task "wget -O /home/pi/domoticz/scripts/lua/json.lua https://raw.githubusercontent.com/irjdekker/DomoPi/master/lua/json.lua"
@@ -104,7 +98,6 @@ do_download_lua() {
     do_function_task "chmod 600 /home/pi/domoticz/scripts/lua/*.lua"
 }
 
-# changed to new setup
 do_download_python() {
     CHECK_URL_ESCAPED="$(sed 's/[\/&]/\\&/g' <<< "$CHECK_URL")"
     do_function_task "mkdir -p /home/pi/domoticz/scripts/python"
@@ -113,7 +106,6 @@ do_download_python() {
     do_function_task "chmod 700 /home/pi/domoticz/scripts/python/checkZwJam.py"
 }
 
-# changed to new setup
 do_download_nefit() {
     do_function_task "mkdir -p /home/pi/easy"
     do_function_task "wget -O /home/pi/easy/easy-server.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-server.sh"
@@ -126,7 +118,6 @@ do_download_nefit() {
     do_function_task "chmod 700 /home/pi/easy/*.sh"
 }
 
-# changed to new setup
 do_download_hue() {
     STRIP_URL_ESCAPED="$(sed 's/[\/&]/\\&/g' <<< "$STRIP_URL")"
     do_function_task "mkdir -p /home/pi/hue"
@@ -138,7 +129,6 @@ do_download_hue() {
     do_function_task "chmod 700 /home/pi/hue/*.sh"
 }
 
-# changed to new setup
 do_download_certificate() {
     do_function_task "mkdir -p /home/pi/certificate"
     do_function_task "wget -O /home/pi/certificate/cf-auth.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-auth.sh"
@@ -152,7 +142,6 @@ do_download_certificate() {
     do_function_task "chmod 700 /home/pi/certificate/*.sh"
 }
 
-# changed to new setup
 do_download_bluetooth() {
     do_function_task "mkdir -p /home/pi/bluetooth"
     do_function_task "wget -O /home/pi/bluetooth/btlecheck.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/bluetooth/btlecheck.sh"
@@ -160,7 +149,6 @@ do_download_bluetooth() {
     do_function_task "chmod 700 /home/pi/bluetooth/*.sh"
 }
 
-# changed to new setup
 do_download_backup() {
     do_function_task "mkdir -p /home/pi/backup"
     do_function_task "wget -O /home/pi/backup/backup.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/backup/backup.sh"
@@ -168,7 +156,6 @@ do_download_backup() {
     do_function_task "chmod 700 /home/pi/backup/*.sh"
 }
 
-# changed to new setup
 do_change_hostname() {
     local NEW_HOSTNAME="$1"
     if ! CURRENT_HOSTNAME="$(tr -d ' \t\n\r' < /etc/hostname)"; then print_task "$MESSAGE" 1 true; fi
@@ -178,13 +165,11 @@ do_change_hostname() {
     do_function_task "echo \"$NEW_HOSTNAME\" | sudo tee /etc/hostname > /dev/null"
 }
 
-# changed to new setup
 do_apt_no_add() {
     do_function_task "echo \"APT::Install-Recommends \\\"0\\\";\" | sudo tee /etc/apt/apt.conf.d/80noadditional"
     do_function_task "echo \"APT::Install-Suggests \\\"0\\\";\" | sudo tee -a /etc/apt/apt.conf.d/80noadditional"
 }
 
-# changed to new setup
 do_configure_keyboard() {
     local MODEL="$1"
     local LAYOUT="$2"
@@ -197,13 +182,11 @@ do_configure_keyboard() {
     do_function_task "sudo udevadm trigger --subsystem-match=input --action=change"
 }
 
-# changed to new setup
 do_change_timezone() {
     do_function_task "sudo ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime"
     do_function_task "sudo dpkg-reconfigure -f noninteractive tzdata"
 }
 
-# changed to new setup
 do_change_locale() {
     local LOCALE="$1"
 
@@ -217,18 +200,15 @@ do_change_locale() {
     do_function_task "sudo dpkg-reconfigure -f noninteractive locales"
 }
 
-# changed to new setup
 do_s3fs_credentials() {
     do_function_task "echo \"$SETUP_S3FS\" | sudo tee -a /etc/passwd-s3fs"
     do_function_task "sudo chmod 600 /etc/passwd-s3fs"
 }
 
-# changed to new setup
 do_fstab_s3fs() {
     do_function_task "echo \"s3fs#domoticz-backup    /home/pi/s3/domoticz-backup     fuse    _netdev,allow_other,url=https://s3-eu-central-1.amazonaws.com,default_acl=private 0 0\" | sudo tee -a /etc/fstab > /dev/null"
 }
 
-# changed to new setup
 do_unattended_domoticz() {
     do_function_task "sudo mkdir -p /etc/domoticz"
     do_function_task "echo \"Dest_folder=/home/pi/domoticz\" | sudo tee /etc/domoticz/setupVars.conf"
@@ -239,7 +219,6 @@ do_unattended_domoticz() {
     do_function_task "sudo chmod 600 /etc/domoticz/setupVars.conf"
 }
 
-# changed to new setup
 do_install_domoticz() {
     do_function_task "wget -O /home/pi/domoticz_install.sh https://install.domoticz.com"
     do_function_task "chmod 700 /home/pi/domoticz_install.sh"
@@ -256,7 +235,6 @@ do_install_domoticz() {
     fi
 }
 
-# changed to new setup
 do_restore_database() {
     do_function_task "sudo service domoticz.sh stop"
 
@@ -280,7 +258,6 @@ do_restore_database() {
     do_function_task "sudo service domoticz.sh start"
 }
 
-# changed to new setup
 do_configure_postfix() {
     do_function_task "sudo postconf -e \"relayhost = smtp.gmail.com:587\""
     do_function_task "sudo postconf -e \"smtp_sasl_auth_enable = yes\""
@@ -296,54 +273,37 @@ do_configure_postfix() {
     do_function_task "sudo systemctl restart postfix"
 }
 
-
-
-
-
-
-
-
-
+do_configure_unattended() {
+    do_function_task "sudo sed -i 's/\\/\\/\\( \\+\"origin=Debian,codename=\${distro_codename}-updates\";\\)/  \\1/' /etc/apt/apt.conf.d/50unattended-upgrades"
+    do_function_task "sudo sed -i 's/\\/\\/\\(Unattended-Upgrade::Mail \\+\\).*/\\1\"ir.j.dekker@gmail.com\";/' /etc/apt/apt.conf.d/50unattended-upgrades"
+    do_function_task "sudo sed -i 's/\\/\\/\\(Unattended-Upgrade::MailOnlyOnError \\+\\).*/\\1\"true\";/' /etc/apt/apt.conf.d/50unattended-upgrades"
+    do_function_task "sudo sed -i 's/\\/\\/\\(Unattended-Upgrade::Remove-Unused-Kernel-Packages \\+\\).*/\\1\"true\";/' /etc/apt/apt.conf.d/50unattended-upgrades"
+    do_function_task "sudo sed -i 's/\\/\\/\\(Unattended-Upgrade::Remove-Unused-Dependencies \\+\\).*/\\1\"true\";/' /etc/apt/apt.conf.d/50unattended-upgrades"
+    do_function_task "sudo sed -i 's/\\/\\/\\(Unattended-Upgrade::Automatic-Reboot \\+\\).*/\\1\"false\";/' /etc/apt/apt.conf.d/50unattended-upgrades"
+    do_function_task "sudo sed -i 's/\\/\\/\\(Unattended-Upgrade::Automatic-Reboot-Time \\+\\).*/\\1\"02:00\";/' /etc/apt/apt.conf.d/50unattended-upgrades"
+    do_function_task "echo 'APT::Periodic::Download-Upgradeable-Packages \"1\";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades"
+    do_function_task "echo 'APT::Periodic::AutocleanInterval \"7\";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades"
+}
 
 do_ssh_key() {
-    MESSAGE="Install SSH key"
-
-    print_task "$MESSAGE" -1 false
-    if ! mkdir -p /home/pi/.ssh >> "$LOGFILE" 2>&1; then print_task "$MESSAGE" 1 true; fi
-    if ! chmod 700 /home/pi/.ssh >> "$LOGFILE" 2>&1; then print_task "$MESSAGE" 1 true; fi
-    if ! wget -O /home/pi/.ssh/authorized_keys https://raw.githubusercontent.com/irjdekker/DomoPi/master/ssh/authorized_keys >> "$LOGFILE" 2>&1; then print_task "$MESSAGE" 1 true; fi
-    if ! chmod 600 /home/pi/.ssh/authorized_keys >> "$LOGFILE" 2>&1; then print_task "$MESSAGE" 1 true; fi
-    print_task "$MESSAGE" 0 true
+    do_function_task "mkdir -p /home/pi/.ssh"
+    do_function_task "chown pi:pi /home/pi/.ssh"
+    do_function_task "chmod 700 /home/pi/.ssh"
+    do_function_task "wget -O /home/pi/.ssh/authorized_keys https://raw.githubusercontent.com/irjdekker/DomoPi/master/ssh/authorized_keys"
+    do_function_task "chmod 600 /home/pi/.ssh/authorized_keys"
 }
 
-do_ssh() {
-    if ! run_cmd "sudo pstree -p | grep -q -E \".*sshd.*\($$\)\""; then
-        do_function_task "$MESSAGE" "sudo update-rc.d ssh enable"
-        do_function_task "$MESSAGE" "sudo invoke-rc.d ssh start"
-    fi
-}
-
-# changed to new setup
 do_auto_login_removal() {
     do_function_task "sudo systemctl set-default multi-user.target"
     do_function_task "sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service"
     do_function_task "sudo rm /etc/systemd/system/getty@tty1.service.d/autologin.conf"
 }
 
-do_configure_unattended() {
-    print_task "Configure unattended upgrades" -1 false
-
-    sudo sed -i 's/\/\/\( \+"origin=Debian,codename=${distro_codename}-updates";\)/  \1/' /etc/apt/apt.conf.d/50unattended-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    sudo sed -i 's/\/\/\(Unattended-Upgrade::Mail \+\).*/\1"ir.j.dekker@gmail.com";/' /etc/apt/apt.conf.d/50unattended-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    sudo sed -i 's/\/\/\(Unattended-Upgrade::MailOnlyOnError \+\).*/\1"true";/' /etc/apt/apt.conf.d/50unattended-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    sudo sed -i 's/\/\/\(Unattended-Upgrade::Remove-Unused-Kernel-Packages \+\).*/\1"true";/' /etc/apt/apt.conf.d/50unattended-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    sudo sed -i 's/\/\/\(Unattended-Upgrade::Remove-Unused-Dependencies \+\).*/\1"true";/' /etc/apt/apt.conf.d/50unattended-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    sudo sed -i 's/\/\/\(Unattended-Upgrade::Automatic-Reboot \+\).*/\1"false";/' /etc/apt/apt.conf.d/50unattended-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    sudo sed -i 's/\/\/\(Unattended-Upgrade::Automatic-Reboot-Time \+\).*/\1"02:00";/' /etc/apt/apt.conf.d/50unattended-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    echo 'APT::Periodic::Download-Upgradeable-Packages "1";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-    echo 'APT::Periodic::AutocleanInterval "7";' | sudo tee -a /etc/apt/apt.conf.d/20auto-upgrades >> "$LOGFILE" 2>&1 || print_task "Configure unattended upgrades" 1 true
-
-    print_task "Configure unattended upgrades" 0 true
+do_ssh() {
+    if ! run_cmd "sudo pstree -p | grep -q -E \".*sshd.*\($$\)\""; then
+        do_function_task "sudo update-rc.d ssh enable"
+        do_function_task "sudo invoke-rc.d ssh start"
+    fi
 }
 
 print_task() {
@@ -644,12 +604,12 @@ if (( STEP == 5 )) ; then
     do_task "Install unattended-upgrades" "sudo apt-get -qq -y install unattended-upgrades > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
     # configure unattended-upgrades
-    do_configure_unattended
+    do_function "Configure unattended upgrades" "do_configure_unattended"
 fi
 
 if (( STEP == 6 )) ; then
     # install ssh key
-    do_ssh_key
+    do_function "Install SSH key" "do_ssh_key"
 
     # remove auto login
     do_function "Remove auto login" "do_auto_login_removal"
@@ -663,7 +623,7 @@ if (( STEP == 6 )) ; then
     do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
 
     # enable ssh
-    do_ssh
+    do_funtion "Enable SSH" "do_ssh"
 
     # reboot at end
     do_task "Reboot" "sleep 10 && reboot"
