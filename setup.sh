@@ -393,10 +393,9 @@ execute_step() {
 
             if (( EXECUTIONSTEP == tmpStep )) ; then
                 if [ "$tmpExecute" = "true" ] ; then
-                    echo "OK"
-                    return 1
-                else
                     return 0
+                else
+                    return 1
                 fi
             fi
         fi
