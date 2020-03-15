@@ -419,7 +419,7 @@ reboot_step() {
                 if [ "$tmpExecute" = "true" ] ; then
                     if [ "$tmpReboot" = "true" ] ; then
                         echo "$LOGFILE $STEP" > "$CONFIGFILE"
-                        do_task "Reboot" "sleep 10 && reboot"
+                        do_task "Reboot" "sleep 10 && sudo reboot"
                         exit 0
                     fi
                 fi
