@@ -23,8 +23,8 @@ else
     sudo /usr/bin/openssl pkcs12 -export -inkey /etc/letsencrypt/live/tanix.nl/privkey.pem -in /etc/letsencrypt/live/tanix.nl/fullchain.pem -out /home/pi/domoticz/letsencrypt_server_cert.p12 -name ubnt -password pass:<CERT_PASSWD>
     sudo chown pi:pi /home/pi/domoticz/letsencrypt_server_cert.p12
 
-    echo -e "\033[1;34mRestarting system ...\033[0m"
-    sudo reboot
+    echo -e "\033[1;34mStarting domoticz service ...\033[0m"
+    sudo service domoticz.sh start
     echo -e "\033[1;34mScript ended succesfully ...\033[0m"
     exit 0
 fi
