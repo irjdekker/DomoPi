@@ -35,6 +35,7 @@ IGreen='\e[0;32m'       # Green
 Reset='\e[0m'           # Reset
 
 STARTSTEP=1
+EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,true,true' '7,true,true')
 CONFIGFILE="$HOME/setup.conf"
 SCRIPTFILE="$HOME/setup.sh"
 SOURCEFILE="$HOME/source.sh"
@@ -379,6 +380,50 @@ get_config() {
     [[ $STEP != *[[:digit:]]* ]] && STEP=$STARTSTEP
 }
 
+execute_step() {
+    local EXECUTIONSTEP="$1"
+    
+    for item in "${EXECUTIONSETUP[@]}"
+    do
+        if [[ $item == *","* ]]
+        then
+            tmpArray=("${item//,/ }")
+            tmpStep=${tmpArray[0]}
+            tmpExecute=${tmpArray[1]}
+            
+            if (( EXECUTIONSTEP == tmpStep )) ; then
+                if [ "$tmpExecute" = "true" ] ; then
+                    return 1
+                else
+                    return 0
+                fi
+            fi
+        fi
+    done    
+}
+
+reboot_step() {
+    local EXECUTIONSTEP="$1"
+    STEP=$(( STEP + 1 ))
+    
+    for item in "${EXECUTIONSETUP[@]}"
+    do
+        if [[ $item == *","* ]]
+        then
+            tmpArray=("${item//,/ }")
+            tmpStep=${tmpArray[0]}
+            tmpReboot=${tmpArray[1]}
+            
+            if (( EXECUTIONSTEP == tmpStep )) ; then
+                if [ "$tmpReboot" = "true" ] ; then
+                    echo "$LOGFILE $STEP" > "$CONFIGFILE"
+                    do_task "Reboot" "sleep 10 && reboot"
+                    exit 0
+                fi
+            fi
+        fi
+    done    
+}
 ############################################################################
 ##
 ## MAIN SECTION OF SCRIPT - action begins here
@@ -416,225 +461,236 @@ do_function "Test internet connection" "do_test_internet"
 [ -f "$SOURCEFILE" ] && source "$SOURCEFILE"
 
 if (( STEP == 1 )) ; then
-    # change pi password
-    do_function "Change password for account pi" "do_change_passwd"
+    if execute_step "$STEP"; then
+        # change pi password
+        do_function "Change password for account pi" "do_change_passwd"
 
-    # setup auto login
-    do_function "Configure auto login" "do_auto_login"
+        # setup auto login
+        do_function "Configure auto login" "do_auto_login"
 
-    # add login script to .bashrc
-    do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/pi/setup.sh' /home/pi/.bashrc || echo '/bin/bash /home/pi/setup.sh' >> /home/pi/.bashrc"
+        # add login script to .bashrc
+        do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/pi/setup.sh' /home/pi/.bashrc || echo '/bin/bash /home/pi/setup.sh' >> /home/pi/.bashrc"
 
-    # update boot configuration
-    do_function "Update boot configuration" "do_update_boot"
+        # update boot configuration
+        do_function "Update boot configuration" "do_update_boot"
 
-    # disable splash screen
-    do_task "Disable splash screen" "grep -qxF 'disable_splash=1' /boot/config.txt || echo 'disable_splash=1' | sudo tee -a /boot/config.txt"
+        # disable splash screen
+        do_task "Disable splash screen" "grep -qxF 'disable_splash=1' /boot/config.txt || echo 'disable_splash=1' | sudo tee -a /boot/config.txt"
 
-    # disable warnings
-    do_task "Disable warnings" "grep -qxF 'avoid_warnings=1' /boot/config.txt || echo 'avoid_warnings=1' | sudo tee -a /boot/config.txt"
+        # disable warnings
+        do_task "Disable warnings" "grep -qxF 'avoid_warnings=1' /boot/config.txt || echo 'avoid_warnings=1' | sudo tee -a /boot/config.txt"
 
-    # disable WiFi
-    do_task "Disable onboard WiFi" "grep -qxF 'dtoverlay=pi3-disable-wifi' /boot/config.txt || echo 'dtoverlay=pi3-disable-wifi' | sudo tee -a /boot/config.txt"
+        # disable WiFi
+        do_task "Disable onboard WiFi" "grep -qxF 'dtoverlay=pi3-disable-wifi' /boot/config.txt || echo 'dtoverlay=pi3-disable-wifi' | sudo tee -a /boot/config.txt"
 
-    # disable onboard bluetooth
-    do_task "Disable onboard Bluetooth" "grep -qxF 'dtoverlay=pi3-disable-bt' /boot/config.txt || echo 'dtoverlay=pi3-disable-bt' | sudo tee -a /boot/config.txt"
+        # disable onboard bluetooth
+        do_task "Disable onboard Bluetooth" "grep -qxF 'dtoverlay=pi3-disable-bt' /boot/config.txt || echo 'dtoverlay=pi3-disable-bt' | sudo tee -a /boot/config.txt"
 
-    # disable plymouth
-    do_task "Disable Plymouth" "sudo systemctl mask plymouth-start.service"
+        # disable plymouth
+        do_task "Disable Plymouth" "sudo systemctl mask plymouth-start.service"
 
-    # disable hciuart
-    do_task "Disable hciuart" "sudo systemctl disable hciuart"
+        # disable hciuart
+        do_task "Disable hciuart" "sudo systemctl disable hciuart"
 
-    # change baud rate
-    do_task "Set baud rate to 9600" "sudo stty -F /dev/ttyAMA0 9600"
+        # change baud rate
+        do_task "Set baud rate to 9600" "sudo stty -F /dev/ttyAMA0 9600"
 
-    # enable RAM drive
-    do_function "Enable RAM drives" "do_fstab"
+        # enable RAM drive
+        do_function "Enable RAM drives" "do_fstab"
 
-    # download lua scripts from github
-    do_function "Download lua scripts" "do_download_lua"
+        # download lua scripts from github
+        do_function "Download lua scripts" "do_download_lua"
 
-    # download python scripts from github
-    do_function "Download python scripts" "do_download_python"
+        # download python scripts from github
+        do_function "Download python scripts" "do_download_python"
 
-    # download nefit scripts from github
-    do_function "Download nefit easy scripts" "do_download_nefit"
+        # download nefit scripts from github
+        do_function "Download nefit easy scripts" "do_download_nefit"
 
-    # download hue scripts from github
-    do_function "Download hue scripts" "do_download_hue"
+        # download hue scripts from github
+        do_function "Download hue scripts" "do_download_hue"
 
-    # download certificate scripts from github
-    do_function "Download certificate scripts" "do_download_certificate"
+        # download certificate scripts from github
+        do_function "Download certificate scripts" "do_download_certificate"
 
-    # download bluetooth scripts from github
-    do_function "Download bluetooth scripts" "do_download_bluetooth"
+        # download bluetooth scripts from github
+        do_function "Download bluetooth scripts" "do_download_bluetooth"
 
-    # download backup scripts from github
-    do_function "Download backup scripts" "do_download_backup"
+        # download backup scripts from github
+        do_function "Download backup scripts" "do_download_backup"
 
-    # change hostname
-    do_function "Change hostname" "do_change_hostname \"domoticz\""
+        # change hostname
+        do_function "Change hostname" "do_change_hostname \"domoticz\""
+    fi
 fi
 
 if (( STEP == 2 )) ; then
-    # disable install of additional packages
-    do_function "Disable additional packages (apt)" "do_apt_no_add"
+    if execute_step "$STEP"; then
+        # disable install of additional packages
+        do_function "Disable additional packages (apt)" "do_apt_no_add"
 
-    # update and upgrade raspberry pi
-    do_task "Update raspberry pi" "sudo apt-get -qq -y update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
-    do_task "Upgrade raspberry pi" "sudo apt-get -qq -y dist-upgrade > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # update and upgrade raspberry pi
+        do_task "Update raspberry pi" "sudo apt-get -qq -y update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Upgrade raspberry pi" "sudo apt-get -qq -y dist-upgrade > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # mark all libraries as autoinstalled
-    do_task "Mark libraries as autoinstalled" "sudo dpkg-query -Wf '\${binary:Package}\n' 'lib*[!raspberrypi-bin]' | sudo xargs apt-mark auto"
+        # mark all libraries as autoinstalled
+        do_task "Mark libraries as autoinstalled" "sudo dpkg-query -Wf '\${binary:Package}\n' 'lib*[!raspberrypi-bin]' | sudo xargs apt-mark auto"
 
-    # remove unused packages
-    do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge"
+        # remove unused packages
+        do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge"
 
-    # install rpi-update package (*** not required - creates network issue with hue ***)
-    do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install rpi-update package (*** not required - creates network issue with hue ***)
+        do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # update raspberry pi to latest kernel and boot (*** not required - creates network issue with hue ***)
-    do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update"
+        # update raspberry pi to latest kernel and boot (*** not required - creates network issue with hue ***)
+        do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update"
+    fi
 fi
 
 if (( STEP == 3 )) ; then
-    # configure keyboard (Logitech G11)
-    do_function "Configure keyboard" "do_configure_keyboard \"pc105\" \"us\""
+    if execute_step "$STEP"; then
+        # configure keyboard (Logitech G11)
+        do_function "Configure keyboard" "do_configure_keyboard \"pc105\" \"us\""
 
-    # change timezone
-    do_function "Change timezone" "do_change_timezone"  
+        # change timezone
+        do_function "Change timezone" "do_change_timezone"  
 
-    # change locale
-    do_function "Configure locale" "do_change_locale \"en_US.UTF-8\""
+        # change locale
+        do_function "Configure locale" "do_change_locale \"en_US.UTF-8\""
 
-    # change default language environment
-    do_task "Change LANGUAGE environment" "grep -qxF 'LANGUAGE=en_US.UTF-8' /etc/environment || echo 'LANGUAGE=en_US.UTF-8' | sudo tee -a /etc/environment"
-    do_task "Change LC_ALL environment" "grep -qxF 'LC_ALL=en_US.UTF-8' /etc/environment || echo 'LC_ALL=en_US.UTF-8' | sudo tee -a /etc/environment"
-    do_task "Change LANG environment" "grep -qxF 'LANG=en_US.UTF-8' /etc/environment || echo 'LANG=en_US.UTF-8' | sudo tee -a /etc/environment"
-    do_task "Change LC_TYPE environment" "grep -qxF 'LC_TYPE=en_US.UTF-8' /etc/environment || echo 'LC_TYPE=en_US.UTF-8' | sudo tee -a /etc/environment"
+        # change default language environment
+        do_task "Change LANGUAGE environment" "grep -qxF 'LANGUAGE=en_US.UTF-8' /etc/environment || echo 'LANGUAGE=en_US.UTF-8' | sudo tee -a /etc/environment"
+        do_task "Change LC_ALL environment" "grep -qxF 'LC_ALL=en_US.UTF-8' /etc/environment || echo 'LC_ALL=en_US.UTF-8' | sudo tee -a /etc/environment"
+        do_task "Change LANG environment" "grep -qxF 'LANG=en_US.UTF-8' /etc/environment || echo 'LANG=en_US.UTF-8' | sudo tee -a /etc/environment"
+        do_task "Change LC_TYPE environment" "grep -qxF 'LC_TYPE=en_US.UTF-8' /etc/environment || echo 'LC_TYPE=en_US.UTF-8' | sudo tee -a /etc/environment"
+    fi
 fi
 
 if (( STEP == 4 )) ; then
-    # create s3 backup folder
-    do_task "Create s3 backup folder" "sudo mkdir -p /home/pi/s3/domoticz-backup"
+    if execute_step "$STEP"; then
+        # create s3 backup folder
+        do_task "Create s3 backup folder" "sudo mkdir -p /home/pi/s3/domoticz-backup"
 
-    # install s3fs
-    do_task "Install s3fs" "sudo apt-get -qq -y install s3fs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install s3fs
+        do_task "Install s3fs" "sudo apt-get -qq -y install s3fs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # create s3fs credential file
-    do_function "Create s3fs credential file" "do_s3fs_credentials"
+        # create s3fs credential file
+        do_function "Create s3fs credential file" "do_s3fs_credentials"
 
-    # add mount to fstab
-    do_function "Enable S3 bucket mount" "do_fstab_s3fs"
+        # add mount to fstab
+        do_function "Enable S3 bucket mount" "do_fstab_s3fs"
+    fi
 fi
 
 if (( STEP == 5 )) ; then
-    # autostart bluetooth script
-    do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/pi\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
+    if execute_step "$STEP"; then
+        # autostart bluetooth script
+        do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/pi\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
 
-    # install python-requests
-    do_task "Install python-requests" "sudo apt-get -qq -y install python-requests > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install python-requests
+        do_task "Install python-requests" "sudo apt-get -qq -y install python-requests > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # install let's encrypted
-    do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install let's encrypted
+        do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # install nodejs
-    do_task "Install nodejs" "sudo apt-get -qq -y install nodejs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install nodejs
+        do_task "Install nodejs" "sudo apt-get -qq -y install nodejs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # install npm (Node Package Manager)
-    do_task "Install npm (Node Package Manager)" "sudo apt-get -qq -y install npm > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install npm (Node Package Manager)
+        do_task "Install npm (Node Package Manager)" "sudo apt-get -qq -y install npm > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # update npm (Node Package Manager)
-    do_task "Update npm (Node Package Manager)" "sudo npm install npm@latest -g"
+        # update npm (Node Package Manager)
+        do_task "Update npm (Node Package Manager)" "sudo npm install npm@latest -g"
 
-    # install pm2 (Production Process Manager)
-    do_task "Install pm2 (Production Process Manager)" "sudo npm install pm2@latest -g"
+        # install pm2 (Production Process Manager)
+        do_task "Install pm2 (Production Process Manager)" "sudo npm install pm2@latest -g"
 
-    # configure autostart for pm2 (Production Process Manager)
-    do_task "Configure autostart for pm2 (Production Process Manager)" "sudo pm2 startup systemd –u pi --hp /home/pi"
+        # configure autostart for pm2 (Production Process Manager)
+        do_task "Configure autostart for pm2 (Production Process Manager)" "sudo pm2 startup systemd –u pi --hp /home/pi"
 
-    # change openssl.cnf MinProtocol (for nefit easy server)
-    do_task "Change openssl.cnf MinProtocol" "sudo sed -i 's/\(MinProtocol *= *\).*/\1None /' /etc/ssl/openssl.cnf"
+        # change openssl.cnf MinProtocol (for nefit easy server)
+        do_task "Change openssl.cnf MinProtocol" "sudo sed -i 's/\(MinProtocol *= *\).*/\1None /' /etc/ssl/openssl.cnf"
 
-    # change openssl.cnf CipherString (for nefit easy server)
-    do_task "Change openssl.cnf CipherString" "sudo sed -i 's/\(CipherString *= *\).*/\1DEFAULT /' /etc/ssl/openssl.cnf"
+        # change openssl.cnf CipherString (for nefit easy server)
+        do_task "Change openssl.cnf CipherString" "sudo sed -i 's/\(CipherString *= *\).*/\1DEFAULT /' /etc/ssl/openssl.cnf"
 
-    # install nefit easy server
-    do_task "Install nefit easy server" "sudo npm install nefit-easy-http-server -g"
+        # install nefit easy server
+        do_task "Install nefit easy server" "sudo npm install nefit-easy-http-server -g"
 
-    # configure autostart for nefit easy server
-    do_task "Start for nefit easy server" "/home/pi/easy/easy-start.sh"
+        # configure autostart for nefit easy server
+        do_task "Start for nefit easy server" "/home/pi/easy/easy-start.sh"
 
-    # configure unattended Domoticz
-    do_function "Configure unattended Domoticz" "do_unattended_domoticz"
+        # configure unattended Domoticz
+        do_function "Configure unattended Domoticz" "do_unattended_domoticz"
 
-    # install required packages
-    do_task "Install required packages for Domoticz" "sudo apt-get -qq -y install libusb-0.1-4 python3.5-dev > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install required packages
+        do_task "Install required packages for Domoticz" "sudo apt-get -qq -y install libusb-0.1-4 python3.5-dev > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # install Domoticz
-    do_function "Install Domoticz" "do_install_domoticz"
+        # install Domoticz
+        do_function "Install Domoticz" "do_install_domoticz"
 
-    # update Domoticz to BETA
-    do_task "Change folder" "cd /home/pi/domoticz"
-    do_task "Update Domoticz to BETA release" "/home/pi/domoticz/updatebeta"
+        # update Domoticz to BETA
+        do_task "Change folder" "cd /home/pi/domoticz"
+        do_task "Update Domoticz to BETA release" "/home/pi/domoticz/updatebeta"
 
-    # install Mechanon theme
-    do_task "Change folder" "cd /home/pi/domoticz/www/styles"
-    do_task "Install Mechanon theme" "git clone https://github.com/EdddieN/machinon-domoticz_theme.git machinon"
+        # install Mechanon theme
+        do_task "Change folder" "cd /home/pi/domoticz/www/styles"
+        do_task "Install Mechanon theme" "git clone https://github.com/EdddieN/machinon-domoticz_theme.git machinon"
 
-    # restore database
-    do_function "Restore Domoticz database" "do_restore_database"
+        # restore database
+        do_function "Restore Domoticz database" "do_restore_database"
 
-    # install ssl certificate
-    do_task "Install ssl certificate" "/home/pi/certificate/change-cert.sh"
+        # install ssl certificate
+        do_task "Install ssl certificate" "/home/pi/certificate/change-cert.sh"
 
-    # configure daily backup
-    do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup"
+        # configure daily backup
+        do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup"
 
-    # install postfix
-    do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
-    do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/main_mailer_type string Internet Site'"
-    do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install postfix
+        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
+        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/main_mailer_type string Internet Site'"
+        do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # configure postfix
-    do_function "Configure Postfix" "do_configure_postfix"
+        # configure postfix
+        do_function "Configure Postfix" "do_configure_postfix"
 
-    # install unattended-upgrades
-    do_task "Install unattended-upgrades" "sudo apt-get -qq -y install unattended-upgrades > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        # install unattended-upgrades
+        do_task "Install unattended-upgrades" "sudo apt-get -qq -y install unattended-upgrades > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
-    # configure unattended-upgrades
-    do_function "Configure unattended upgrades" "do_configure_unattended"
+        # configure unattended-upgrades
+        do_function "Configure unattended upgrades" "do_configure_unattended"
+    fi
 fi
 
 if (( STEP == 6 )) ; then
-    # install ssh key
-    do_function "Install SSH key" "do_ssh_key"
+    if execute_step "$STEP"; then
+        # install ssh key
+        do_function "Install SSH key" "do_ssh_key"
+        
+        # enable ssh
+        do_funtion "Enable SSH" "do_ssh"
 
-    # remove auto login
-    do_function "Remove auto login" "do_auto_login_removal"
+        # harden ssh !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    # remove login script from .bashrc
-    do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/pi\/setup.sh/d' /home/pi/.bashrc"
+        # remove auto login
+        do_function "Remove auto login" "do_auto_login_removal"
 
-    # remove script/config file
-    do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
-    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
-    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
+        # remove login script from .bashrc
+        do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/pi\/setup.sh/d' /home/pi/.bashrc"
 
-    # enable ssh
-    do_funtion "Enable SSH" "do_ssh"
+        # remove script/config file
+        do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
+        do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
+        do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
 
-    # reboot at end
-    do_task "Reboot" "sleep 10 && reboot"
-    exit 0
+        # reboot at end
+        do_task "Reboot" "sleep 10 && reboot"
+        exit 0
+    fi
 fi
 
-# used for test purposes
-if (( STEP == 0 )) ; then
-    exit 0
+if (( STEP == 7 )) ; then # Only here to store functionality
+    if execute_step "$STEP"; then
+        do_task "Remove sudo permissions from user pi" "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
+    fi
 fi
-
-STEP=$(( STEP + 1 ))
-echo "$LOGFILE $STEP" > "$CONFIGFILE"
-do_task "Reboot" "sleep 10 && reboot"
