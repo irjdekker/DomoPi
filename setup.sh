@@ -387,12 +387,12 @@ execute_step() {
     do
         if [[ $item == *","* ]]
         then
-            echo "$item"
             IFS=',' read -ra tmpArray <<< "$item"
             tmpStep=${tmpArray[0]}
             tmpExecute=${tmpArray[1]}
-            echo "$tmpStep"
+
             if (( EXECUTIONSTEP == tmpStep )) ; then
+                echo "$tmpExecute"
                 if [ "$tmpExecute" = "true" ] ; then
                     return 1
                 else
