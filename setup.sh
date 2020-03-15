@@ -599,8 +599,8 @@ if (( STEP == 2 )) ; then
         do_function "Disable additional packages (apt)" "do_apt_no_add"
 
         # update and upgrade raspberry pi
-        do_task "Update raspberry pi" "sudo apt-get -qq -y update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
-        do_task "Upgrade raspberry pi" "sudo apt-get -qq -y dist-upgrade > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Update raspberry pi" "sudo apt-get -qq -y update > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
+        do_task "Upgrade raspberry pi" "sudo apt-get -qq -y dist-upgrade > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # mark all libraries as autoinstalled
         do_task "Mark libraries as autoinstalled" "sudo dpkg-query -Wf '\${binary:Package}\n' 'lib*[!raspberrypi-bin]' | sudo xargs apt-mark auto"
@@ -609,7 +609,7 @@ if (( STEP == 2 )) ; then
         do_task "Remove unused packages" "sudo apt-get -qq -y autoremove --purge"
 
         # install rpi-update package (*** not required - creates network issue with hue ***)
-        do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install rpi-update package" "sudo apt-get -qq -y install rpi-update > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # update raspberry pi to latest kernel and boot (*** not required - creates network issue with hue ***)
         do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update"
@@ -643,7 +643,7 @@ if (( STEP == 4 )) ; then
         do_task "Create s3 backup folder" "sudo mkdir -p /home/pi/s3/domoticz-backup"
 
         # install s3fs
-        do_task "Install s3fs" "sudo apt-get -qq -y install s3fs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install s3fs" "sudo apt-get -qq -y install s3fs > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # create s3fs credential file
         do_function "Create s3fs credential file" "do_s3fs_credentials"
@@ -660,16 +660,16 @@ if (( STEP == 5 )) ; then
         do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/pi\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
 
         # install python-requests
-        do_task "Install python-requests" "sudo apt-get -qq -y install python-requests > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install python-requests" "sudo apt-get -qq -y install python-requests > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # install let's encrypted
-        do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install certbot" "sudo apt-get -qq -y install certbot > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # install nodejs
-        do_task "Install nodejs" "sudo apt-get -qq -y install nodejs > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install nodejs" "sudo apt-get -qq -y install nodejs > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # install npm (Node Package Manager)
-        do_task "Install npm (Node Package Manager)" "sudo apt-get -qq -y install npm > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install npm (Node Package Manager)" "sudo apt-get -qq -y install npm > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # update npm (Node Package Manager)
         do_task "Update npm (Node Package Manager)" "sudo npm install npm@latest -g"
@@ -696,7 +696,7 @@ if (( STEP == 5 )) ; then
         do_function "Configure unattended Domoticz" "do_unattended_domoticz"
 
         # install required packages
-        do_task "Install required packages for Domoticz" "sudo apt-get -qq -y install libusb-0.1-4 python3.5-dev > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install required packages for Domoticz" "sudo apt-get -qq -y install libusb-0.1-4 python3.5-dev > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # install Domoticz
         do_function "Install Domoticz" "do_install_domoticz"
@@ -722,13 +722,13 @@ if (( STEP == 5 )) ; then
         do_function "Configure unattended postfix" "do_unattended_postfix"
         
         # install postfix
-        do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # configure postfix
         do_function "Configure Postfix" "do_configure_postfix"
 
         # install unattended-upgrades
-        do_task "Install unattended-upgrades" "sudo apt-get -qq -y install unattended-upgrades > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install unattended-upgrades" "sudo apt-get -qq -y install unattended-upgrades > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
         # configure unattended-upgrades
         do_function "Configure unattended upgrades" "do_configure_unattended"
