@@ -333,7 +333,7 @@ print_task() {
     printf "%b" "$PRINTTEXT"
 
     if (( STATUS >= 1 )); then
-        inform_user "$STEP has failed: $TEXT"
+        inform_user "Step $STEP has failed: $TEXT"
         tput cvvis
         exit 1
     fi
@@ -406,7 +406,7 @@ execute_step() {
 reboot_step() {
     local EXECUTIONSTEP="$1"
     
-    inform_user "$STEP has finished"
+    inform_user "Step $STEP has finished"
     STEP=$(( STEP + 1 ))
     
     for item in "${EXECUTIONSETUP[@]}"
