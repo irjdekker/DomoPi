@@ -388,7 +388,7 @@ execute_step() {
         if [[ $item == *","* ]]
         then
             echo "$item"
-            tmpArray=("${item//,/ }")
+            tmpArray=(${item//,/ })
             tmpStep=${tmpArray[0]}
             tmpExecute=${tmpArray[1]}
             echo "$tmpStep"
