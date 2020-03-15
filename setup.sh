@@ -411,9 +411,9 @@ reboot_step() {
     do
         if [[ $item == *","* ]]
         then
-            tmpArray=("${item//,/ }")
+            IFS=',' read -ra tmpArray <<< "$item"
             tmpStep=${tmpArray[0]}
-            tmpReboot=${tmpArray[1]}
+            tmpReboot=${tmpArray[2]}
             
             if (( EXECUTIONSTEP == tmpStep )) ; then
                 if [ "$tmpReboot" = "true" ] ; then
