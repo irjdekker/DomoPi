@@ -315,7 +315,7 @@ print_task() {
     if (( STATUS == -2 )); then
         PRINTTEXT="\r         "
     elif (( STATUS == -1 )); then
-        echo "**************************** $(date -u ) $TEXT ******************************" >> "$LOGFILE"
+        echo "**************************** $(date -u ) - $TEXT ******************************" >> "$LOGFILE"
         PRINTTEXT="\r[      ] "
     elif (( STATUS == 0 )); then
         PRINTTEXT="\r[  ${IGreen}OK${Reset}  ] "
@@ -394,7 +394,7 @@ execute_step() {
 
             if (( EXECUTIONSTEP == tmpStep )) ; then
                 if [ "$tmpExecute" = "true" ] ; then
-                    echo "**************************** $(date -u ) STEP $STEP ******************************" >> "$LOGFILE"
+                    echo "**************************** $(date -u ) - STEP $STEP ******************************" >> "$LOGFILE"
                     return 0
                 else
                     return 1
@@ -459,7 +459,7 @@ final_step() {
 }
 
 inform_user() {
-    local COMMAND="/usr/bin/curl -s --form-string 'token=$MAIN_TOKEN' --form-string 'user=$MAIN_USER' --form-string 'priority=0' --form-string 'title=Domoticz' --form-string 'message=$1' https://api.pushover.net/1/messages.json"
+    local COMMAND="/usr/bin/curl -s --form-string 'token=$MAIN_TOKEN' --form-string 'user=$MAIN_USER' --form-string 'priority=0' --form-string 'title=Domoticz' --form-string 'message=$1' https://api.pushover.net/1/messages.json > /dev/null 2>&1"
     run_cmd "$COMMAND"
 }
 
