@@ -306,7 +306,9 @@ do_ssh_key() {
 do_auto_login_removal() {
     do_function_task "sudo systemctl set-default multi-user.target"
     do_function_task "sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service"
-    do_function_task "sudo rm /etc/systemd/system/getty@tty1.service.d/autologin.conf"
+    if [ -f /etc/systemd/system/getty@tty1.service.d/autologin.conf ]; then
+        do_function_task "sudo rm /etc/systemd/system/getty@tty1.service.d/autologin.conf"
+    fi
 }
 
 do_ssh() {
