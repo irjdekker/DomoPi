@@ -259,6 +259,15 @@ do_restore_database() {
     do_function_task "sudo service domoticz.sh start"
 }
 
+do_unattended_postfix() {
+    do_function_task "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
+    do_function_task "sudo debconf-set-selections <<< 'postfix postfix/main_mailer_type string Internet Site'"
+    do_function_task "echo \"postmaster:    root\" | sudo tee /etc/aliases"
+    do_function_task "echo \"root:          postmaster@localhost.localdomain\" | sudo tee -a /etc/aliases"
+    do_function_task "sudo chown root:root /etc/aliases"
+    do_function_task "sudo chmod 644 /etc/aliases"
+}
+
 do_configure_postfix() {
     do_function_task "sudo postconf -e \"relayhost = smtp.gmail.com:587\""
     do_function_task "sudo postconf -e \"smtp_sasl_auth_enable = yes\""
@@ -454,7 +463,11 @@ final_step() {
     do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
     
     # reboot system
-    do_task "Reboot" "sleep 10 && sudo reboot"
+    if (( STEP != 99 )) ; then
+        do_task "Reboot" "sleep 10 && sudo reboot"
+    fi
+    
+    # exit script at end
     exit
 }
 
@@ -689,9 +702,10 @@ if (( STEP == 5 )) ; then
         # configure daily backup
         do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup"
 
+        # configure unattended postfix
+        do_function "Configure unattended postfix" "do_unattended_postfix"
+        
         # install postfix
-        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
-        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/main_mailer_type string Internet Site'"
         do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
 
         # configure postfix
@@ -715,13 +729,16 @@ fi
 
 if (( STEP == 99 )) ; then
     if execute_step "$STEP"; then
+        # configure unattended postfix
+        do_function "Configure unattended postfix" "do_unattended_postfix"
+        
         # install postfix
-        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
-        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/main_mailer_type string Internet Site'"
-        # do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+        
+        # configure postfix
+        do_function "Configure Postfix" "do_configure_postfix"
     fi
     reboot_step "$STEP"
-    exit
 fi
 
 final_step
