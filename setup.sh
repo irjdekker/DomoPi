@@ -413,13 +413,16 @@ reboot_step() {
         then
             IFS=',' read -ra tmpArray <<< "$item"
             tmpStep=${tmpArray[0]}
+            tmpExecute=${tmpArray[1]}
             tmpReboot=${tmpArray[2]}
             
             if (( EXECUTIONSTEP == tmpStep )) ; then
-                if [ "$tmpReboot" = "true" ] ; then
-                    echo "$LOGFILE $STEP" > "$CONFIGFILE"
-                    do_task "Reboot" "sleep 10 && reboot"
-                    exit 0
+                if [ "$tmpExecute" = "true" ] ; then
+                    if [ "$tmpReboot" = "true" ] ; then
+                        echo "$LOGFILE $STEP" > "$CONFIGFILE"
+                        do_task "Reboot" "sleep 10 && reboot"
+                        exit 0
+                    fi
                 fi
             fi
         fi
@@ -523,6 +526,7 @@ if (( STEP == 1 )) ; then
         # change hostname
         do_function "Change hostname" "do_change_hostname \"domoticz\""
     fi
+    reboot_step "$STEP"
 fi
 
 if (( STEP == 2 )) ; then
@@ -546,6 +550,7 @@ if (( STEP == 2 )) ; then
         # update raspberry pi to latest kernel and boot (*** not required - creates network issue with hue ***)
         do_task "Update raspberry pi to latest kernel and boot" "sudo SKIP_WARNING=1 rpi-update"
     fi
+    reboot_step "$STEP"
 fi
 
 if (( STEP == 3 )) ; then
@@ -565,6 +570,7 @@ if (( STEP == 3 )) ; then
         do_task "Change LANG environment" "grep -qxF 'LANG=en_US.UTF-8' /etc/environment || echo 'LANG=en_US.UTF-8' | sudo tee -a /etc/environment"
         do_task "Change LC_TYPE environment" "grep -qxF 'LC_TYPE=en_US.UTF-8' /etc/environment || echo 'LC_TYPE=en_US.UTF-8' | sudo tee -a /etc/environment"
     fi
+    reboot_step "$STEP"
 fi
 
 if (( STEP == 4 )) ; then
@@ -581,6 +587,7 @@ if (( STEP == 4 )) ; then
         # add mount to fstab
         do_function "Enable S3 bucket mount" "do_fstab_s3fs"
     fi
+    reboot_step "$STEP"
 fi
 
 if (( STEP == 5 )) ; then
@@ -661,6 +668,7 @@ if (( STEP == 5 )) ; then
         # configure unattended-upgrades
         do_function "Configure unattended upgrades" "do_configure_unattended"
     fi
+    reboot_step "$STEP"
 fi
 
 if (( STEP == 6 )) ; then
@@ -688,10 +696,12 @@ if (( STEP == 6 )) ; then
         do_task "Reboot" "sleep 10 && reboot"
         exit 0
     fi
+    reboot_step "$STEP"
 fi
 
 if (( STEP == 7 )) ; then # Only here to store functionality
     if execute_step "$STEP"; then
         do_task "Remove sudo permissions from user pi" "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
     fi
+    reboot_step "$STEP"
 fi
