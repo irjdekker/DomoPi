@@ -34,8 +34,8 @@ IGreen='\e[0;32m'       # Green
 # Reset
 Reset='\e[0m'           # Reset
 
-STARTSTEP=1
-EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,false,true')
+STARTSTEP=99
+EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,false,true' '99,true,false' )
 CONFIGFILE="$HOME/setup.conf"
 SCRIPTFILE="$HOME/setup.sh"
 SOURCEFILE="$HOME/source.sh"
@@ -711,6 +711,17 @@ if (( STEP == 6 )) ; then
         do_task "Remove sudo permissions from user pi" "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
     fi
     reboot_step "$STEP"
+fi
+
+if (( STEP == 99 )) ; then
+    if execute_step "$STEP"; then
+        # install postfix
+        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/mailname string tanix.nl'"
+        do_task "Pre-configure postfix domain" "sudo debconf-set-selections <<< 'postfix postfix/main_mailer_type string Internet Site'"
+        # do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
+    fi
+    reboot_step "$STEP"
+    exit
 fi
 
 final_step
