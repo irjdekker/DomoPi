@@ -392,8 +392,8 @@ execute_step() {
             tmpExecute=${tmpArray[1]}
 
             if (( EXECUTIONSTEP == tmpStep )) ; then
-                echo "$tmpExecute"
                 if [ "$tmpExecute" = "true" ] ; then
+                    echo "OK"
                     return 1
                 else
                     return 0
