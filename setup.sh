@@ -245,7 +245,7 @@ do_restore_database() {
         print_task "$MESSAGE" 1 true
     fi
 
-    do_function_task "sudo chown root:root /home/pi/domoticz/Config/ozwcache_0xdaa30a14.xml"
+    do_function_task "sudo chown root:root /home/pi/domoticz/domoticz.db"
     do_function_task "sudo chmod 600 /home/pi/domoticz/domoticz.db"
 
     if [ -f "/home/pi/s3/domoticz-backup/ozwcache_0xdaa30a14.xml" ]; then
@@ -332,7 +332,8 @@ print_task() {
 
     printf "%b" "$PRINTTEXT"
 
-    if (( STATUS == 1 )); then
+    if (( STATUS >= 1 )); then
+        inform_user "$STEP has failed: $TEXT"
         tput cvvis
         exit 1
     fi
@@ -404,6 +405,8 @@ execute_step() {
 
 reboot_step() {
     local EXECUTIONSTEP="$1"
+    
+    inform_user "$STEP has finished"
     STEP=$(( STEP + 1 ))
     
     for item in "${EXECUTIONSETUP[@]}"
@@ -427,6 +430,12 @@ reboot_step() {
         fi
     done    
 }
+
+inform_user() {
+    local COMMAND="/usr/bin/curl -s --form-string 'token=$MAIN_TOKEN' --form-string 'user=$MAIN_USER' --form-string 'priority=0' --form-string 'title=Domoticz' --form-string 'message=$1' https://api.pushover.net/1/messages.json"
+    run_cmd "$COMMAND"
+}
+
 ############################################################################
 ##
 ## MAIN SECTION OF SCRIPT - action begins here
