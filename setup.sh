@@ -34,8 +34,8 @@ IGreen='\e[0;32m'       # Green
 # Reset
 Reset='\e[0m'           # Reset
 
-STARTSTEP=99
-EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,false,true' '99,true,false' )
+STARTSTEP=1
+EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,false,false' '99,false,false' )
 CONFIGFILE="$HOME/setup.conf"
 SCRIPTFILE="$HOME/setup.sh"
 SOURCEFILE="$HOME/source.sh"
@@ -318,6 +318,20 @@ do_ssh() {
     fi
 }
 
+print_padded_text() {
+    pad=$(printf '%0.1s' "*"{1..70})
+    padlength=140
+    updatetext=" $(date -u ) - $1 "
+    padleft=$(( (padlength - ${#updatetext}) / 2 ))
+    padright=$(( padlength - ${#updatetext} - padleft ))
+
+    printf '%*.*s' 0 $padleft "$pad"
+    printf '%s' "$updatetext"
+    printf '%*.*s' 0 $padright "$pad"
+    printf '\n'
+}
+
+
 print_task() {
     local TEXT="$1"
     local STATUS="$2"
@@ -326,7 +340,7 @@ print_task() {
     if (( STATUS == -2 )); then
         PRINTTEXT="\r         "
     elif (( STATUS == -1 )); then
-        echo "**************************** $(date -u ) - $TEXT ******************************" >> "$LOGFILE"
+        print_padded_text "$TEXT" >> "$LOGFILE"
         PRINTTEXT="\r[      ] "
     elif (( STATUS == 0 )); then
         PRINTTEXT="\r[  ${IGreen}OK${Reset}  ] "
@@ -405,7 +419,7 @@ execute_step() {
 
             if (( EXECUTIONSTEP == tmpStep )) ; then
                 if [ "$tmpExecute" = "true" ] ; then
-                    echo "**************************** $(date -u ) - STEP $STEP ******************************" >> "$LOGFILE"
+                    print_padded_text "STEP $STEP" >> "$LOGFILE"
                     return 0
                 else
                     return 1
@@ -731,14 +745,8 @@ fi
 
 if (( STEP == 99 )) ; then
     if execute_step "$STEP"; then
-        # configure unattended postfix
-        do_function "Configure unattended postfix" "do_unattended_postfix"
-        
-        # install postfix
-        do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q '^[WE]' /tmp/setup.err"
-        
-        # configure postfix
-        do_function "Configure Postfix" "do_configure_postfix"
+        # execute tests
+        echo "no tests at the moment"
     fi
     reboot_step "$STEP"
 fi
