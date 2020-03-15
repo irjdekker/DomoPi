@@ -35,7 +35,7 @@ IGreen='\e[0;32m'       # Green
 Reset='\e[0m'           # Reset
 
 STARTSTEP=1
-EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,true,true' '7,true,true')
+EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,false,true')
 CONFIGFILE="$HOME/setup.conf"
 SCRIPTFILE="$HOME/setup.sh"
 SOURCEFILE="$HOME/source.sh"
@@ -315,6 +315,7 @@ print_task() {
     if (( STATUS == -2 )); then
         PRINTTEXT="\r         "
     elif (( STATUS == -1 )); then
+        echo "**************************** $(date -u ) $TEXT ******************************" >> "$LOGFILE"
         PRINTTEXT="\r[      ] "
     elif (( STATUS == 0 )); then
         PRINTTEXT="\r[  ${IGreen}OK${Reset}  ] "
@@ -334,8 +335,7 @@ print_task() {
 
     if (( STATUS >= 1 )); then
         inform_user "Step $STEP has failed: $TEXT"
-        tput cvvis
-        exit 1
+        final_step
     fi
 }
 
@@ -394,6 +394,7 @@ execute_step() {
 
             if (( EXECUTIONSTEP == tmpStep )) ; then
                 if [ "$tmpExecute" = "true" ] ; then
+                    echo "**************************** $(date -u ) STEP $STEP ******************************" >> "$LOGFILE"
                     return 0
                 else
                     return 1
@@ -423,12 +424,38 @@ reboot_step() {
                     if [ "$tmpReboot" = "true" ] ; then
                         echo "$LOGFILE $STEP" > "$CONFIGFILE"
                         do_task "Reboot" "sleep 10 && sudo reboot"
-                        exit 0
+                        exit
                     fi
                 fi
             fi
         fi
     done    
+}
+
+final_step() {
+    # install ssh key
+    do_function "Install SSH key" "do_ssh_key"
+    
+    # enable ssh
+    do_function "Enable SSH" "do_ssh"
+
+    # harden ssh !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # do_function "Harden SSH" "do_ssh_hardening"
+
+    # remove auto login
+    do_function "Remove auto login" "do_auto_login_removal"
+
+    # remove login script from .bashrc
+    do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/pi\/setup.sh/d' /home/pi/.bashrc"
+
+    # remove script/config file
+    do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
+    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
+    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
+    
+    # reboot system
+    do_task "Reboot" "sleep 10 && sudo reboot"
+    exit
 }
 
 inform_user() {
@@ -452,7 +479,7 @@ if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
     if [[ $# -eq 0 ]]
     then
         echo "No password supplied"
-        exit 1
+        exit
     fi
 
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
@@ -681,35 +708,9 @@ fi
 
 if (( STEP == 6 )) ; then
     if execute_step "$STEP"; then
-        # install ssh key
-        do_function "Install SSH key" "do_ssh_key"
-        
-        # enable ssh
-        do_funtion "Enable SSH" "do_ssh"
-
-        # harden ssh !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        # remove auto login
-        do_function "Remove auto login" "do_auto_login_removal"
-
-        # remove login script from .bashrc
-        do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/pi\/setup.sh/d' /home/pi/.bashrc"
-
-        # remove script/config file
-        do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
-        do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
-        do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
-
-        # reboot at end
-        do_task "Reboot" "sleep 10 && reboot"
-        exit 0
-    fi
-    reboot_step "$STEP"
-fi
-
-if (( STEP == 7 )) ; then # Only here to store functionality
-    if execute_step "$STEP"; then
         do_task "Remove sudo permissions from user pi" "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
     fi
     reboot_step "$STEP"
 fi
+
+final_step
