@@ -74,7 +74,7 @@ do_change_primary_account() {
     local USERGROUPS
     USERGROUPS="$(groups pi | cut -d " " -f 4- | sed 's/[ ]/,/g')"
 
-    do_function_task "sudo adduser --disabled-password --gecos "" $SYSTEM_USER"
+    do_function_task "sudo adduser --disabled-password --gecos \"\" $SYSTEM_USER"
     do_function_task "echo '$SYSTEM_USER:$SYSTEM_PASSWORD' | sudo -S /usr/sbin/chpasswd"
     do_function_task "sudo cp -f /etc/sudoers.d/010_pi-nopasswd /etc/sudoers.d/020_$SYSTEM_USER-nopasswd"
     do_function_task "sudo sed -i 's/^pi/^$SYSTEM_USER/g' /etc/sudoers.d/020_$SYSTEM_USER-nopasswd"
