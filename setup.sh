@@ -42,8 +42,6 @@
 ## POSTFIX_PASSWORD
 ## S3FS_PASSWORD
 ##
-## SYSTEM_USER              ----> new
-##
 ## Routines
 ## Here at the beginning, a load of useful routines - see further down
 
@@ -53,15 +51,12 @@ IGreen='\e[0;32m'       # Green
 Reset='\e[0m'           # Reset
 
 STARTSTEP=1
-EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '99,false,false' )
-CONFIGFILE="$HOME/setup.conf"
+EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,true,true' )
 SCRIPTFILE="$HOME/setup.sh"
+CONFIGFILE="$HOME/setup.conf"
 SOURCEFILE="$HOME/source.sh"
 ENCSOURCEFILE="$SOURCEFILE.enc"
 SCRIPTNAME="$0"
-
-echo $SCRIPTNAME
-exit 0
 
 do_test_internet() {
     local COUNT=0
@@ -76,7 +71,8 @@ do_test_internet() {
 }
 
 do_change_primary_account() {
-    local USERGROUPS="$(groups pi | cut -d " " -f 4- | sed 's/[ ]/,/g')"
+    local USERGROUPS
+    USERGROUPS="$(groups pi | cut -d " " -f 4- | sed 's/[ ]/,/g')"
 
     do_function_task "sudo adduser --disabled-password --gecos "" $SYSTEM_USER"
     do_function_task "echo '$SYSTEM_USER:$SYSTEM_PASSWORD' | sudo -S /usr/sbin/chpasswd"
@@ -86,6 +82,19 @@ do_change_primary_account() {
     do_function_task "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
     do_function_task "echo 'pi:$(/usr/bin/openssl rand -base64 20)' | sudo -S /usr/sbin/chpasswd" 
     do_function_task "sudo passwd -l pi"
+}
+
+do_clean_pi_account() {
+    do_function_task "[ -f $SCRIPTFILE ] && sudo mv -f $SCRIPTFILE /home/$SYSTEMUSER"
+    do_function_task "[ -f /home/$SYSTEMUSER/setup.sh ] && sudo chown @SYSTEMUSER:$SYSTEMUSER /home/$SYSTEMUSER/setup.sh"
+    do_function_task "[ -f /home/$SYSTEMUSER/setup.sh ] && sudo chmod 700 /home/$SYSTEMUSER/setup.sh"
+    do_function_task "[ -f $CONFIGFILE ] && sudo mv -f $CONFIGFILE /home/$SYSTEMUSER"
+    do_function_task "[ -f /home/$SYSTEMUSER/setup.conf ] && sudo chown @SYSTEMUSER:$SYSTEMUSER /home/$SYSTEMUSER/setup.conf"
+    do_function_task "[ -f /home/$SYSTEMUSER/setup.conf ] && sudo chmod 644 /home/$SYSTEMUSER/setup.conf"
+    do_function_task "[ -f $SOURCEFILE ] && sudo mv -f $SOURCEFILE /home/$SYSTEMUSER"
+    do_function_task "[ -f /home/$SYSTEMUSER/source.sh ] && sudo chown @SYSTEMUSER:$SYSTEMUSER /home/$SYSTEMUSER/source.sh"
+    do_function_task "[ -f /home/$SYSTEMUSER/source.sh ] && sudo chmod 700 /home/$SYSTEMUSER/source.sh"    
+    do_function_task "history -c && history -w"
 }
 
 do_auto_login() {
@@ -261,7 +270,7 @@ do_install_domoticz() {
     do_function_task "sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh"
     do_function_task "sudo systemctl daemon-reload"
     
-    if [ -f /home/$SYSTEM_USER/domoticz_install.sh ]; then
+    if [ -f "/home/$SYSTEM_USER/domoticz_install.sh" ]; then
         do_function_task "rm -f /home/$SYSTEM_USER/domoticz_install.sh"
     fi
 }
@@ -533,17 +542,23 @@ tput civis
 get_config
 
 # start script for beginning when just downloaded
-if [ "$SCRIPTNAME" != "/home/pi/setup.sh" ] ; then
+if [[ "$SCRIPTNAME" != *"setup.sh"* ]]; then
     # check if argument has been provided
     if [[ $# -eq 0 ]]
     then
         echo "No password supplied"
         exit
     fi
+    
+    # check if script run by user pi
+    if [ "$(whoami)" != "pi" ]; then
+        echo "Script must be run as user: pi"
+        exit 
+    fi
 
-    do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
-    do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
-    do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
+    do_task "Remove script from home directory pi user" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
+    do_task "Remove script config file from home directory pi user" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
+    do_task "Remove source file from home directory pi user" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
 
     # save script in home directory
     do_task "Save script to home directory" "wget -O $SCRIPTFILE https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh"
@@ -560,15 +575,23 @@ do_function "Test internet connection" "do_test_internet"
 
 if (( STEP == 1 )) ; then
     if execute_step "$STEP"; then
-        # change pi password
-        # do_function "Change password for account pi" "do_change_passwd"
+        # Change primary account
+        do_function "Change primary account" "do_change_primary_account"
+        
+        # Clean pi account
+        do_function "Clean pi account" "do_clean_pi_account"
 
         # setup auto login
         do_function "Configure auto login" "do_auto_login"
 
         # add login script to .bashrc
         do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/$SYSTEM_USER/setup.sh' /home/$SYSTEM_USER/.bashrc || echo '/bin/bash /home/$SYSTEM_USER/setup.sh' >> /home/$SYSTEM_USER/.bashrc"
+    fi
+    reboot_step "$STEP"
+fi
 
+if (( STEP == 2 )) ; then
+    if execute_step "$STEP"; then
         # update boot configuration
         do_function "Update boot configuration" "do_update_boot"
 
@@ -623,7 +646,7 @@ if (( STEP == 1 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 2 )) ; then
+if (( STEP == 3 )) ; then
     if execute_step "$STEP"; then
         # disable install of additional packages
         do_function "Disable additional packages (apt)" "do_apt_no_add"
@@ -647,7 +670,7 @@ if (( STEP == 2 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 3 )) ; then
+if (( STEP == 4 )) ; then
     if execute_step "$STEP"; then
         # configure keyboard (Logitech G11)
         do_function "Configure keyboard" "do_configure_keyboard \"pc105\" \"us\""
@@ -667,7 +690,7 @@ if (( STEP == 3 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 4 )) ; then
+if (( STEP == 5 )) ; then
     if execute_step "$STEP"; then
         # create s3 backup folder
         do_task "Create s3 backup folder" "sudo mkdir -p /home/$SYSTEM_USER/s3/domoticz-backup"
@@ -684,7 +707,7 @@ if (( STEP == 4 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 5 )) ; then
+if (( STEP == 6 )) ; then
     if execute_step "$STEP"; then
         # autostart bluetooth script
         do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/$SYSTEM_USER\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
@@ -762,13 +785,6 @@ if (( STEP == 5 )) ; then
 
         # configure unattended-upgrades
         do_function "Configure unattended upgrades" "do_configure_unattended"
-    fi
-    reboot_step "$STEP"
-fi
-
-if (( STEP == 99 )) ; then
-    if execute_step "$STEP"; then
-
     fi
     reboot_step "$STEP"
 fi
