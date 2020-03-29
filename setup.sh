@@ -23,24 +23,45 @@
 ## - Add public key to authorized key file (done - testing required)
 ## - Configure backup towards S3 (done - testing required)
 ##
-## ROUTINES
+## Variables
+## SYSTEM_IP
+## SYSTEM_USER
+## SYSTEM_PASSWORD
+## STRIP_IP
+## STRIP_URL
+## STRIP_USERNAME
+## NEFIT_SERIAL_NUMBER
+## NEFIT_ACCESS_KEY
+## NEFIT_PASSWORD
+## PUSHOVER_USER
+## PUSHOVER_TOKEN
+## CERT_API
+## CERT_EMAIL
+## CERT_PASSWORD
+## CHECK_URL
+## POSTFIX_PASSWORD
+## S3FS_PASSWORD
+##
+## SYSTEM_USER              ----> new
+##
+## Routines
 ## Here at the beginning, a load of useful routines - see further down
 
-
-# High Intensity
+# Change colors
 IRed='\e[0;31m'         # Red
 IGreen='\e[0;32m'       # Green
-
-# Reset
 Reset='\e[0m'           # Reset
 
 STARTSTEP=1
-EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,false,false' '99,false,false' )
+EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '99,false,false' )
 CONFIGFILE="$HOME/setup.conf"
 SCRIPTFILE="$HOME/setup.sh"
 SOURCEFILE="$HOME/source.sh"
 ENCSOURCEFILE="$SOURCEFILE.enc"
 SCRIPTNAME="$0"
+
+echo $SCRIPTNAME
+exit 0
 
 do_test_internet() {
     local COUNT=0
@@ -54,8 +75,17 @@ do_test_internet() {
     done
 }
 
-do_change_passwd() {
-    do_function_task "echo 'pi:$SETUP_PASSWD' | sudo -S /usr/sbin/chpasswd"
+do_change_primary_account() {
+    local USERGROUPS="$(groups pi | cut -d " " -f 4- | sed 's/[ ]/,/g')"
+
+    do_function_task "sudo adduser --disabled-password --gecos "" $SYSTEM_USER"
+    do_function_task "echo '$SYSTEM_USER:$SYSTEM_PASSWORD' | sudo -S /usr/sbin/chpasswd"
+    do_function_task "sudo cp -f /etc/sudoers.d/010_pi-nopasswd /etc/sudoers.d/020_$SYSTEM_USER-nopasswd"
+    do_function_task "sudo sed -i 's/^pi/^$SYSTEM_USER/g' /etc/sudoers.d/020_$SYSTEM_USER-nopasswd"
+    do_function_task "sudo usermod -a -G $USERGROUPS $SYSTEM_USER"
+    do_function_task "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
+    do_function_task "echo 'pi:$(/usr/bin/openssl rand -base64 20)' | sudo -S /usr/sbin/chpasswd" 
+    do_function_task "sudo passwd -l pi"
 }
 
 do_auto_login() {
@@ -63,7 +93,7 @@ do_auto_login() {
     do_function_task "sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service"
     do_function_task "echo \"[Service]\" | sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
     do_function_task "echo \"ExecStart=\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
-    do_function_task "echo \"ExecStart=-/sbin/agetty --autologin pi --noclear %I linux\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
+    do_function_task "echo \"ExecStart=-/sbin/agetty --autologin $SYSTEM_USER --noclear %I linux\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
 }
 
 do_update_boot() {
@@ -91,70 +121,70 @@ do_fstab() {
 }
 
 do_download_lua() {
-    do_function_task "mkdir -p /home/pi/domoticz/scripts/lua"
-    do_function_task "wget -O /home/pi/domoticz/scripts/lua/json.lua https://raw.githubusercontent.com/irjdekker/DomoPi/master/lua/json.lua"
-    do_function_task "wget -O /home/pi/domoticz/scripts/lua/main_functions.lua https://raw.githubusercontent.com/irjdekker/DomoPi/master/lua/main_functions.lua"
-    do_function_task "sed -i \"s/<MAIN_TOKEN>/$MAIN_TOKEN/\" /home/pi/domoticz/scripts/lua/main_functions.lua"
-    do_function_task "sed -i \"s/<MAIN_USER>/$MAIN_USER/\" /home/pi/domoticz/scripts/lua/main_functions.lua"
-    do_function_task "chmod 600 /home/pi/domoticz/scripts/lua/*.lua"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/domoticz/scripts/lua"
+    do_function_task "wget -O /home/$SYSTEM_USER/domoticz/scripts/lua/json.lua https://raw.githubusercontent.com/irjdekker/DomoPi/master/lua/json.lua"
+    do_function_task "wget -O /home/$SYSTEM_USER/domoticz/scripts/lua/main_functions.lua https://raw.githubusercontent.com/irjdekker/DomoPi/master/lua/main_functions.lua"
+    do_function_task "sed -i \"s/<PUSHOVER_TOKEN>/$PUSHOVER_TOKEN/\" /home/$SYSTEM_USER/domoticz/scripts/lua/main_functions.lua"
+    do_function_task "sed -i \"s/<PUSHOVER_USER>/$PUSHOVER_USER/\" /home/$SYSTEM_USER/domoticz/scripts/lua/main_functions.lua"
+    do_function_task "chmod 600 /home/$SYSTEM_USER/domoticz/scripts/lua/*.lua"
 }
 
 do_download_python() {
     CHECK_URL_ESCAPED="$(sed 's/[\/&]/\\&/g' <<< "$CHECK_URL")"
-    do_function_task "mkdir -p /home/pi/domoticz/scripts/python"
-    do_function_task "wget -O /home/pi/domoticz/scripts/python/checkZwJam.py https://raw.githubusercontent.com/irjdekker/DomoPi/master/python/checkZwJam.py"
-    do_function_task "sed -i \"s/<CHECK_URL>/$CHECK_URL_ESCAPED/\" /home/pi/domoticz/scripts/python/checkZwJam.py"
-    do_function_task "chmod 700 /home/pi/domoticz/scripts/python/checkZwJam.py"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/domoticz/scripts/python"
+    do_function_task "wget -O /home/$SYSTEM_USER/domoticz/scripts/python/checkZwJam.py https://raw.githubusercontent.com/irjdekker/DomoPi/master/python/checkZwJam.py"
+    do_function_task "sed -i \"s/<CHECK_URL>/$CHECK_URL_ESCAPED/\" /home/$SYSTEM_USER/domoticz/scripts/python/checkZwJam.py"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/domoticz/scripts/python/checkZwJam.py"
 }
 
 do_download_nefit() {
-    do_function_task "mkdir -p /home/pi/easy"
-    do_function_task "wget -O /home/pi/easy/easy-server.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-server.sh"
-    do_function_task "wget -O /home/pi/easy/easy-start.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-start.sh"
-    do_function_task "wget -O /home/pi/easy/easy-stop.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-stop.sh"
-    do_function_task "wget -O /home/pi/easy/easy-status.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-status.sh"
-    do_function_task "sed -i \"s/<NEFIT_SERIAL_NUMBER>/$NEFIT_SERIAL_NUMBER/\" /home/pi/easy/easy-server.sh"
-    do_function_task "sed -i \"s/<NEFIT_ACCESS_KEY>/$NEFIT_ACCESS_KEY/\" /home/pi/easy/easy-server.sh"
-    do_function_task "sed -i \"s/<NEFIT_PASSWORD>/$NEFIT_PASSWORD/\" /home/pi/easy/easy-server.sh"
-    do_function_task "chmod 700 /home/pi/easy/*.sh"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/easy"
+    do_function_task "wget -O /home/$SYSTEM_USER/easy/easy-server.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-server.sh"
+    do_function_task "wget -O /home/$SYSTEM_USER/easy/easy-start.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-start.sh"
+    do_function_task "wget -O /home/$SYSTEM_USER/easy/easy-stop.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-stop.sh"
+    do_function_task "wget -O /home/$SYSTEM_USER/easy/easy-status.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/easy/easy-status.sh"
+    do_function_task "sed -i \"s/<NEFIT_SERIAL_NUMBER>/$NEFIT_SERIAL_NUMBER/\" /home/$SYSTEM_USER/easy/easy-server.sh"
+    do_function_task "sed -i \"s/<NEFIT_ACCESS_KEY>/$NEFIT_ACCESS_KEY/\" /home/$SYSTEM_USER/easy/easy-server.sh"
+    do_function_task "sed -i \"s/<NEFIT_PASSWORD>/$NEFIT_PASSWORD/\" /home/$SYSTEM_USER/easy/easy-server.sh"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/easy/*.sh"
 }
 
 do_download_hue() {
     STRIP_URL_ESCAPED="$(sed 's/[\/&]/\\&/g' <<< "$STRIP_URL")"
-    do_function_task "mkdir -p /home/pi/hue"
-    do_function_task "wget -O /home/pi/hue/hue_bashlibrary.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/hue/hue_bashlibrary.sh"
-    do_function_task "wget -O /home/pi/hue/strip.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/hue/strip.sh"
-    do_function_task "sed -i \"s/<STRIP_IP>/$STRIP_IP/\" /home/pi/hue/strip.sh"
-    do_function_task "sed -i \"s/<STRIP_USERNAME>/$STRIP_USERNAME/\" /home/pi/hue/strip.sh"
-    do_function_task "sed -i \"s/<STRIP_URL>/$STRIP_URL_ESCAPED/\" /home/pi/hue/strip.sh"
-    do_function_task "chmod 700 /home/pi/hue/*.sh"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/hue"
+    do_function_task "wget -O /home/$SYSTEM_USER/hue/hue_bashlibrary.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/hue/hue_bashlibrary.sh"
+    do_function_task "wget -O /home/$SYSTEM_USER/hue/strip.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/hue/strip.sh"
+    do_function_task "sed -i \"s/<STRIP_IP>/$STRIP_IP/\" /home/$SYSTEM_USER/hue/strip.sh"
+    do_function_task "sed -i \"s/<STRIP_USERNAME>/$STRIP_USERNAME/\" /home/$SYSTEM_USER/hue/strip.sh"
+    do_function_task "sed -i \"s/<STRIP_URL>/$STRIP_URL_ESCAPED/\" /home/$SYSTEM_USER/hue/strip.sh"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/hue/*.sh"
 }
 
 do_download_certificate() {
-    do_function_task "mkdir -p /home/pi/certificate"
-    do_function_task "wget -O /home/pi/certificate/cf-auth.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-auth.sh"
-    do_function_task "wget -O /home/pi/certificate/cf-clean.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-clean.sh"
-    do_function_task "wget -O /home/pi/certificate/change-cert.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/change-cert.sh"
-    do_function_task "sed -i \"s/<CERT_PASSWD>/$CERT_PASSWD/\" /home/pi/certificate/change-cert.sh"
-    do_function_task "sed -i \"s/<CERT_API>/$CERT_API/\" /home/pi/certificate/cf-auth.sh"
-    do_function_task "sed -i \"s/<CERT_EMAIL>/$CERT_EMAIL/\" /home/pi/certificate/cf-auth.sh"
-    do_function_task "sed -i \"s/<CERT_API>/$CERT_API/\" /home/pi/certificate/cf-clean.sh"
-    do_function_task "sed -i \"s/<CERT_EMAIL>/$CERT_EMAIL/\" /home/pi/certificate/cf-clean.sh"
-    do_function_task "chmod 700 /home/pi/certificate/*.sh"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/certificate"
+    do_function_task "wget -O /home/$SYSTEM_USER/certificate/cf-auth.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-auth.sh"
+    do_function_task "wget -O /home/$SYSTEM_USER/certificate/cf-clean.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/cf-clean.sh"
+    do_function_task "wget -O /home/$SYSTEM_USER/certificate/change-cert.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/certificate/change-cert.sh"
+    do_function_task "sed -i \"s/<CERT_PASSWORD>/$CERT_PASSWORD/\" /home/$SYSTEM_USER/certificate/change-cert.sh"
+    do_function_task "sed -i \"s/<CERT_API>/$CERT_API/\" /home/$SYSTEM_USER/certificate/cf-auth.sh"
+    do_function_task "sed -i \"s/<CERT_EMAIL>/$CERT_EMAIL/\" /home/$SYSTEM_USER/certificate/cf-auth.sh"
+    do_function_task "sed -i \"s/<CERT_API>/$CERT_API/\" /home/$SYSTEM_USER/certificate/cf-clean.sh"
+    do_function_task "sed -i \"s/<CERT_EMAIL>/$CERT_EMAIL/\" /home/$SYSTEM_USER/certificate/cf-clean.sh"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/certificate/*.sh"
 }
 
 do_download_bluetooth() {
-    do_function_task "mkdir -p /home/pi/bluetooth"
-    do_function_task "wget -O /home/pi/bluetooth/btlecheck.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/bluetooth/btlecheck.sh"
-    do_function_task "sed -i \"s/<BLUETOOTH_IP>/$DOMOTICZ_IP/\" /home/pi/bluetooth/btlecheck.sh"
-    do_function_task "chmod 700 /home/pi/bluetooth/*.sh"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/bluetooth"
+    do_function_task "wget -O /home/$SYSTEM_USER/bluetooth/btlecheck.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/bluetooth/btlecheck.sh"
+    do_function_task "sed -i \"s/<SYSTEM_IP>/$SYSTEM_IP/\" /home/$SYSTEM_USER/bluetooth/btlecheck.sh"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/bluetooth/*.sh"
 }
 
 do_download_backup() {
-    do_function_task "mkdir -p /home/pi/backup"
-    do_function_task "wget -O /home/pi/backup/backup.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/backup/backup.sh"
-    do_function_task "sed -i \"s/<DOMOTICZ_IP>/$DOMOTICZ_IP/\" /home/pi/backup/backup.sh"
-    do_function_task "chmod 700 /home/pi/backup/*.sh"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/backup"
+    do_function_task "wget -O /home/$SYSTEM_USER/backup/backup.sh https://raw.githubusercontent.com/irjdekker/DomoPi/master/backup/backup.sh"
+    do_function_task "sed -i \"s/<SYSTEM_IP>/$SYSTEM_IP/\" /home/$SYSTEM_USER/backup/backup.sh"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/backup/*.sh"
 }
 
 do_change_hostname() {
@@ -202,17 +232,17 @@ do_change_locale() {
 }
 
 do_s3fs_credentials() {
-    do_function_task "echo \"$SETUP_S3FS\" | sudo tee -a /etc/passwd-s3fs"
+    do_function_task "echo \"$S3FS_PASSWORD\" | sudo tee -a /etc/passwd-s3fs"
     do_function_task "sudo chmod 600 /etc/passwd-s3fs"
 }
 
 do_fstab_s3fs() {
-    do_function_task "echo \"s3fs#domoticz-backup    /home/pi/s3/domoticz-backup     fuse    _netdev,allow_other,url=https://s3-eu-central-1.amazonaws.com,default_acl=private 0 0\" | sudo tee -a /etc/fstab > /dev/null"
+    do_function_task "echo \"s3fs#domoticz-backup    /home/$SYSTEM_USER/s3/domoticz-backup     fuse    _netdev,allow_other,url=https://s3-eu-central-1.amazonaws.com,default_acl=private 0 0\" | sudo tee -a /etc/fstab > /dev/null"
 }
 
 do_unattended_domoticz() {
     do_function_task "sudo mkdir -p /etc/domoticz"
-    do_function_task "echo \"Dest_folder=/home/pi/domoticz\" | sudo tee /etc/domoticz/setupVars.conf"
+    do_function_task "echo \"Dest_folder=/home/$SYSTEM_USER/domoticz\" | sudo tee /etc/domoticz/setupVars.conf"
     do_function_task "echo \"Enable_http=false\" | sudo tee -a /etc/domoticz/setupVars.conf"
     do_function_task "echo \"HTTP_port=0\" | sudo tee -a /etc/domoticz/setupVars.conf"
     do_function_task "echo \"Enable_https=true\" | sudo tee -a /etc/domoticz/setupVars.conf"
@@ -221,41 +251,41 @@ do_unattended_domoticz() {
 }
 
 do_install_domoticz() {
-    do_function_task "wget -O /home/pi/domoticz_install.sh https://install.domoticz.com"
-    do_function_task "chmod 700 /home/pi/domoticz_install.sh"
-    do_function_task "sed -i \"/^\\s*updatedomoticz\$/s/updatedomoticz/installdomoticz/\" /home/pi/domoticz_install.sh"
-    do_function_task "sudo /bin/bash /home/pi/domoticz_install.sh --unattended"
+    do_function_task "wget -O /home/$SYSTEM_USER/domoticz_install.sh https://install.domoticz.com"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/domoticz_install.sh"
+    do_function_task "sed -i \"/^\\s*updatedomoticz\$/s/updatedomoticz/installdomoticz/\" /home/$SYSTEM_USER/domoticz_install.sh"
+    do_function_task "sudo /bin/bash /home/$SYSTEM_USER/domoticz_install.sh --unattended"
     do_function_task "sudo sed -i 's/DAEMON_ARGS -www 8080/DAEMON_ARGS -www 0/' /etc/init.d/domoticz.sh"
-    do_function_task "sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert \\/home\\/pi\\/domoticz\\/letsencrypt_server_cert.pem/' /etc/init.d/domoticz.sh"
+    do_function_task "sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert \\/home\\/$SYSTEM_USER\\/domoticz\\/letsencrypt_server_cert.pem/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i 's/DAEMON_ARGS -log \\/tmp\\/domoticz.txt/DAEMON_ARGS -log \\/tmp\\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh"
     do_function_task "sudo systemctl daemon-reload"
     
-    if [ -f /home/pi/domoticz_install.sh ]; then
-        do_function_task "rm -f /home/pi/domoticz_install.sh"
+    if [ -f /home/$SYSTEM_USER/domoticz_install.sh ]; then
+        do_function_task "rm -f /home/$SYSTEM_USER/domoticz_install.sh"
     fi
 }
 
 do_restore_database() {
     do_function_task "sudo service domoticz.sh stop"
 
-    if [ -f "/home/pi/s3/domoticz-backup/domoticz.db" ]; then
-        do_function_task "sudo cp -f -H /home/pi/s3/domoticz-backup/domoticz.db /home/pi/domoticz/domoticz.db"
+    if [ -f "/home/$SYSTEM_USER/s3/domoticz-backup/domoticz.db" ]; then
+        do_function_task "sudo cp -f -H /home/$SYSTEM_USER/s3/domoticz-backup/domoticz.db /home/$SYSTEM_USER/domoticz/domoticz.db"
     else
         print_task "$MESSAGE" 1 true
     fi
 
-    do_function_task "sudo chown root:root /home/pi/domoticz/domoticz.db"
-    do_function_task "sudo chmod 600 /home/pi/domoticz/domoticz.db"
+    do_function_task "sudo chown root:root /home/$SYSTEM_USER/domoticz/domoticz.db"
+    do_function_task "sudo chmod 600 /home/$SYSTEM_USER/domoticz/domoticz.db"
 
-    if [ -f "/home/pi/s3/domoticz-backup/ozwcache_0xdaa30a14.xml" ]; then
-        do_function_task "sudo cp -f -H /home/pi/s3/domoticz-backup/ozwcache_0xdaa30a14.xml /home/pi/domoticz/Config/ozwcache_0xdaa30a14.xml"
+    if [ -f "/home/$SYSTEM_USER/s3/domoticz-backup/ozwcache_0xdaa30a14.xml" ]; then
+        do_function_task "sudo cp -f -H /home/$SYSTEM_USER/s3/domoticz-backup/ozwcache_0xdaa30a14.xml /home/$SYSTEM_USER/domoticz/Config/ozwcache_0xdaa30a14.xml"
     else
         print_task "$MESSAGE" 1 true
     fi
 
-    do_function_task "sudo chown root:root /home/pi/domoticz/Config/ozwcache_0xdaa30a14.xml"
-    do_function_task "sudo chmod 600 /home/pi/domoticz/Config/ozwcache_0xdaa30a14.xml"
+    do_function_task "sudo chown root:root /home/$SYSTEM_USER/domoticz/Config/ozwcache_0xdaa30a14.xml"
+    do_function_task "sudo chmod 600 /home/$SYSTEM_USER/domoticz/Config/ozwcache_0xdaa30a14.xml"
     do_function_task "sudo service domoticz.sh start"
 }
 
@@ -275,7 +305,7 @@ do_configure_postfix() {
     do_function_task "sudo postconf -e \"smtp_sasl_security_options = noanonymous\""
     do_function_task "sudo postconf -e \"smtp_tls_security_level = may\""
     do_function_task "sudo postconf -e \"header_size_limit = 4096000\""
-    do_function_task "echo \"$POSTFIX_PASSWD\" | sudo tee -a /etc/postfix/sasl/sasl_passwd"
+    do_function_task "echo \"$POSTFIX_PASSWORD\" | sudo tee -a /etc/postfix/sasl/sasl_passwd"
     do_function_task "sudo postmap /etc/postfix/sasl/sasl_passwd"
     do_function_task "sudo chown root:root /etc/postfix/sasl/sasl_passwd /etc/postfix/sasl/sasl_passwd.db"
     do_function_task "sudo chmod 600 /etc/postfix/sasl/sasl_passwd /etc/postfix/sasl/sasl_passwd.db"
@@ -296,11 +326,11 @@ do_configure_unattended() {
 }
 
 do_ssh_key() {
-    do_function_task "mkdir -p /home/pi/.ssh"
-    do_function_task "chown pi:pi /home/pi/.ssh"
-    do_function_task "chmod 700 /home/pi/.ssh"
-    do_function_task "wget -O /home/pi/.ssh/authorized_keys https://raw.githubusercontent.com/irjdekker/DomoPi/master/ssh/authorized_keys"
-    do_function_task "chmod 600 /home/pi/.ssh/authorized_keys"
+    do_function_task "mkdir -p /home/$SYSTEM_USER/.ssh"
+    do_function_task "chown $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/.ssh"
+    do_function_task "chmod 700 /home/$SYSTEM_USER/.ssh"
+    do_function_task "wget -O /home/$SYSTEM_USER/.ssh/authorized_keys https://raw.githubusercontent.com/irjdekker/DomoPi/master/ssh/authorized_keys"
+    do_function_task "chmod 600 /home/$SYSTEM_USER/.ssh/authorized_keys"
 }
 
 do_auto_login_removal() {
@@ -471,7 +501,7 @@ final_step() {
     do_function "Remove auto login" "do_auto_login_removal"
 
     # remove login script from .bashrc
-    do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/pi\/setup.sh/d' /home/pi/.bashrc"
+    do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/$SYSTEM_USER\/setup.sh/d' /home/$SYSTEM_USER/.bashrc"
 
     # remove script/config file
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
@@ -488,7 +518,7 @@ final_step() {
 }
 
 inform_user() {
-    local COMMAND="/usr/bin/curl -s --form-string 'token=$MAIN_TOKEN' --form-string 'user=$MAIN_USER' --form-string 'priority=0' --form-string 'title=Domoticz' --form-string 'message=$1' https://api.pushover.net/1/messages.json > /dev/null 2>&1"
+    local COMMAND="/usr/bin/curl -s --form-string 'token=$PUSHOVER_TOKEN' --form-string 'user=$PUSHOVER_USER' --form-string 'priority=0' --form-string 'title=Domoticz' --form-string 'message=$1' https://api.pushover.net/1/messages.json > /dev/null 2>&1"
     run_cmd "$COMMAND"
 }
 
@@ -531,13 +561,13 @@ do_function "Test internet connection" "do_test_internet"
 if (( STEP == 1 )) ; then
     if execute_step "$STEP"; then
         # change pi password
-        do_function "Change password for account pi" "do_change_passwd"
+        # do_function "Change password for account pi" "do_change_passwd"
 
         # setup auto login
         do_function "Configure auto login" "do_auto_login"
 
         # add login script to .bashrc
-        do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/pi/setup.sh' /home/pi/.bashrc || echo '/bin/bash /home/pi/setup.sh' >> /home/pi/.bashrc"
+        do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/$SYSTEM_USER/setup.sh' /home/$SYSTEM_USER/.bashrc || echo '/bin/bash /home/$SYSTEM_USER/setup.sh' >> /home/$SYSTEM_USER/.bashrc"
 
         # update boot configuration
         do_function "Update boot configuration" "do_update_boot"
@@ -640,7 +670,7 @@ fi
 if (( STEP == 4 )) ; then
     if execute_step "$STEP"; then
         # create s3 backup folder
-        do_task "Create s3 backup folder" "sudo mkdir -p /home/pi/s3/domoticz-backup"
+        do_task "Create s3 backup folder" "sudo mkdir -p /home/$SYSTEM_USER/s3/domoticz-backup"
 
         # install s3fs
         do_task "Install s3fs" "sudo apt-get -qq -y install s3fs > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
@@ -657,7 +687,7 @@ fi
 if (( STEP == 5 )) ; then
     if execute_step "$STEP"; then
         # autostart bluetooth script
-        do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/pi\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
+        do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/$SYSTEM_USER\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
 
         # install python-requests
         do_task "Install python-requests" "sudo apt-get -qq -y install python-requests > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
@@ -678,7 +708,7 @@ if (( STEP == 5 )) ; then
         do_task "Install pm2 (Production Process Manager)" "sudo npm install pm2@latest -g"
 
         # configure autostart for pm2 (Production Process Manager)
-        do_task "Configure autostart for pm2 (Production Process Manager)" "sudo pm2 startup systemd –u pi --hp /home/pi"
+        do_task "Configure autostart for pm2 (Production Process Manager)" "sudo pm2 startup systemd –u $SYSTEM_USER --hp /home/$SYSTEM_USER"
 
         # change openssl.cnf MinProtocol (for nefit easy server)
         do_task "Change openssl.cnf MinProtocol" "sudo sed -i 's/\(MinProtocol *= *\).*/\1None /' /etc/ssl/openssl.cnf"
@@ -690,7 +720,7 @@ if (( STEP == 5 )) ; then
         do_task "Install nefit easy server" "sudo npm install nefit-easy-http-server -g"
 
         # configure autostart for nefit easy server
-        do_task "Start for nefit easy server" "/home/pi/easy/easy-start.sh"
+        do_task "Start for nefit easy server" "/home/$SYSTEM_USER/easy/easy-start.sh"
 
         # configure unattended Domoticz
         do_function "Configure unattended Domoticz" "do_unattended_domoticz"
@@ -702,21 +732,21 @@ if (( STEP == 5 )) ; then
         do_function "Install Domoticz" "do_install_domoticz"
 
         # update Domoticz to BETA
-        do_task "Change folder" "cd /home/pi/domoticz"
-        do_task "Update Domoticz to BETA release" "/home/pi/domoticz/updatebeta"
+        do_task "Change folder" "cd /home/$SYSTEM_USER/domoticz"
+        do_task "Update Domoticz to BETA release" "/home/$SYSTEM_USER/domoticz/updatebeta"
 
         # install Mechanon theme
-        do_task "Change folder" "cd /home/pi/domoticz/www/styles"
+        do_task "Change folder" "cd /home/$SYSTEM_USER/domoticz/www/styles"
         do_task "Install Mechanon theme" "git clone https://github.com/EdddieN/machinon-domoticz_theme.git machinon"
 
         # restore database
         do_function "Restore Domoticz database" "do_restore_database"
 
         # install ssl certificate
-        do_task "Install ssl certificate" "/home/pi/certificate/change-cert.sh"
+        do_task "Install ssl certificate" "/home/$SYSTEM_USER/certificate/change-cert.sh"
 
         # configure daily backup
-        do_task "Configure daily backup" "sudo ln -sf /home/pi/backup/backup.sh /etc/cron.daily/domo-backup"
+        do_task "Configure daily backup" "sudo ln -sf /home/$SYSTEM_USER/backup/backup.sh /etc/cron.daily/domo-backup"
 
         # configure unattended postfix
         do_function "Configure unattended postfix" "do_unattended_postfix"
@@ -736,17 +766,9 @@ if (( STEP == 5 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 6 )) ; then
-    if execute_step "$STEP"; then
-        do_task "Remove sudo permissions from user pi" "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
-    fi
-    reboot_step "$STEP"
-fi
-
 if (( STEP == 99 )) ; then
     if execute_step "$STEP"; then
-        # execute tests
-        echo "no tests at the moment"
+
     fi
     reboot_step "$STEP"
 fi

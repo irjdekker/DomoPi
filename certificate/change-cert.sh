@@ -20,7 +20,7 @@ else
     sudo cat /etc/letsencrypt/live/tanix.nl/fullchain.pem >> /home/pi/domoticz/letsencrypt_server_cert.pem
     [ -f /etc/ssl/certs/dhparam.pem ] || sudo /usr/bin/openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
     sudo cat /etc/ssl/certs/dhparam.pem >> /home/pi/domoticz/letsencrypt_server_cert.pem
-    sudo /usr/bin/openssl pkcs12 -export -inkey /etc/letsencrypt/live/tanix.nl/privkey.pem -in /etc/letsencrypt/live/tanix.nl/fullchain.pem -out /home/pi/domoticz/letsencrypt_server_cert.p12 -name ubnt -password pass:<CERT_PASSWD>
+    sudo /usr/bin/openssl pkcs12 -export -inkey /etc/letsencrypt/live/tanix.nl/privkey.pem -in /etc/letsencrypt/live/tanix.nl/fullchain.pem -out /home/pi/domoticz/letsencrypt_server_cert.p12 -name ubnt -password pass:<CERT_PASSWORD>
     sudo chown pi:pi /home/pi/domoticz/letsencrypt_server_cert.p12
 
     echo -e "\033[1;34mStarting domoticz service ...\033[0m"

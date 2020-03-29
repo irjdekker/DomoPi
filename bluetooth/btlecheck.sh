@@ -29,7 +29,7 @@ do
   shift
 done
 
-SERVER="<DOMOTICZ_IP>"
+SERVER="<SYSTEM_IP>"
 PORT="443"
 CHECK=0
 
