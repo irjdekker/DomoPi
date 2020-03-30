@@ -23,40 +23,56 @@
 ## - Add public key to authorized key file (done - testing required)
 ## - Configure backup towards S3 (done - testing required)
 ##
-## Variables
-## SYSTEM_IP
-## SYSTEM_USER
-## SYSTEM_PASSWORD
-## STRIP_IP
-## STRIP_URL
-## STRIP_USERNAME
-## NEFIT_SERIAL_NUMBER
-## NEFIT_ACCESS_KEY
-## NEFIT_PASSWORD
-## PUSHOVER_USER
-## PUSHOVER_TOKEN
-## CERT_API
-## CERT_EMAIL
-## CERT_PASSWORD
-## CHECK_URL
-## POSTFIX_PASSWORD
-## S3FS_PASSWORD
+## *************************************************************************************************** ##
+##      __      __     _____  _____          ____  _      ______  _____                                ##
+##      \ \    / /\   |  __ \|_   _|   /\   |  _ \| |    |  ____|/ ____|                               ##
+##       \ \  / /  \  | |__) | | |    /  \  | |_) | |    | |__  | (___                                 ##
+##        \ \/ / /\ \ |  _  /  | |   / /\ \ |  _ <| |    |  __|  \___ \                                ##
+##         \  / ____ \| | \ \ _| |_ / ____ \| |_) | |____| |____ ____) |                               ##
+##          \/_/    \_\_|  \_\_____/_/    \_\____/|______|______|_____/                                ##
+##                                                                                                     ##
+## *************************************************************************************************** ##
 ##
-## Routines
-## Here at the beginning, a load of useful routines - see further down
+## Following variables are defined in sourced shell script
+##      SYSTEM_IP
+##      SYSTEM_USER
+##      SYSTEM_PASSWORD
+##      STRIP_IP
+##      STRIP_URL
+##      STRIP_USERNAME
+##      NEFIT_SERIAL_NUMBER
+##      NEFIT_ACCESS_KEY
+##      NEFIT_PASSWORD
+##      PUSHOVER_USER
+##      PUSHOVER_TOKEN
+##      CERT_API
+##      CERT_EMAIL
+##      CERT_PASSWORD
+##      CHECK_URL
+##      POSTFIX_PASSWORD
+##      S3FS_PASSWORD
+##
+## The following variables are defined below
 
-# Change colors
-IRed='\e[0;31m'         # Red
-IGreen='\e[0;32m'       # Green
-Reset='\e[0m'           # Reset
-
-STARTSTEP=1
 EXECUTIONSETUP=('1,true,true' '2,true,true' '3,true,true' '4,true,true' '5,true,true' '6,true,true' )
+EXECUTIONFROM="Internet"
 SCRIPTFILE="$HOME/setup.sh"
 CONFIGFILE="$HOME/setup.conf"
 SOURCEFILE="$HOME/source.sh"
 ENCSOURCEFILE="$SOURCEFILE.enc"
-SCRIPTNAME="$0"
+IRed='\e[0;31m'
+IGreen='\e[0;32m'
+Reset='\e[0m'
+
+## *************************************************************************************************** ##
+##       _____   ____  _    _ _______ _____ _   _ ______  _____                                        ##
+##      |  __ \ / __ \| |  | |__   __|_   _| \ | |  ____|/ ____|                                       ##
+##      | |__) | |  | | |  | |  | |    | | |  \| | |__  | (___                                         ##
+##      |  _  /| |  | | |  | |  | |    | | | . ` |  __|  \___ \                                        ##
+##      | | \ \| |__| | |__| |  | |   _| |_| |\  | |____ ____) |                                       ##
+##      |_|  \_\\____/ \____/   |_|  |_____|_| \_|______|_____/                                        ##
+##                                                                                                     ##
+## *************************************************************************************************** ##
 
 do_test_internet() {
     local COUNT=0
@@ -77,11 +93,8 @@ do_change_primary_account() {
     do_function_task "sudo adduser --disabled-password --gecos \"\" $SYSTEM_USER"
     do_function_task "echo '$SYSTEM_USER:$SYSTEM_PASSWORD' | sudo -S /usr/sbin/chpasswd"
     do_function_task "sudo cp -f /etc/sudoers.d/010_pi-nopasswd /etc/sudoers.d/020_$SYSTEM_USER-nopasswd"
-    do_function_task "sudo sed -i 's/^pi/^$SYSTEM_USER/g' /etc/sudoers.d/020_$SYSTEM_USER-nopasswd"
+    do_function_task "sudo sed -i 's/^pi/$SYSTEM_USER/g' /etc/sudoers.d/020_$SYSTEM_USER-nopasswd"
     do_function_task "sudo usermod -a -G $USERGROUPS $SYSTEM_USER"
-    do_function_task "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
-    do_function_task "echo 'pi:$(/usr/bin/openssl rand -base64 20)' | sudo -S /usr/sbin/chpasswd" 
-    do_function_task "sudo passwd -l pi"
 }
 
 do_clean_pi_account() {
@@ -93,7 +106,7 @@ do_clean_pi_account() {
     do_function_task "[ -f /home/$SYSTEMUSER/setup.conf ] && sudo chmod 644 /home/$SYSTEMUSER/setup.conf"
     do_function_task "[ -f $SOURCEFILE ] && sudo mv -f $SOURCEFILE /home/$SYSTEMUSER"
     do_function_task "[ -f /home/$SYSTEMUSER/source.sh ] && sudo chown @SYSTEMUSER:$SYSTEMUSER /home/$SYSTEMUSER/source.sh"
-    do_function_task "[ -f /home/$SYSTEMUSER/source.sh ] && sudo chmod 700 /home/$SYSTEMUSER/source.sh"    
+    do_function_task "[ -f /home/$SYSTEMUSER/source.sh ] && sudo chmod 700 /home/$SYSTEMUSER/source.sh"
     do_function_task "history -c && history -w"
 }
 
@@ -103,6 +116,12 @@ do_auto_login() {
     do_function_task "echo \"[Service]\" | sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
     do_function_task "echo \"ExecStart=\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
     do_function_task "echo \"ExecStart=-/sbin/agetty --autologin $SYSTEM_USER --noclear %I linux\" | sudo tee -a /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null"
+}
+
+do_lock_pi_account() {
+    do_function_task "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
+    do_function_task "echo 'pi:$(/usr/bin/openssl rand -base64 20)' | sudo -S /usr/sbin/chpasswd"
+    do_function_task "sudo passwd -l pi"
 }
 
 do_update_boot() {
@@ -201,7 +220,7 @@ do_change_hostname() {
     if ! CURRENT_HOSTNAME="$(tr -d ' \t\n\r' < /etc/hostname)"; then print_task "$MESSAGE" 1 true; fi
 
     do_function_task "sudo sed -i '/^\\s*\$/d' /etc/hosts"
-    do_function_task "sudo sed -i \"s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\\t$NEW_HOSTNAME/g\" /etc/hosts"    
+    do_function_task "sudo sed -i \"s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\\t$NEW_HOSTNAME/g\" /etc/hosts"
     do_function_task "echo \"$NEW_HOSTNAME\" | sudo tee /etc/hostname > /dev/null"
 }
 
@@ -269,7 +288,7 @@ do_install_domoticz() {
     do_function_task "sudo sed -i 's/DAEMON_ARGS -log \\/tmp\\/domoticz.txt/DAEMON_ARGS -log \\/tmp\\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh"
     do_function_task "sudo systemctl daemon-reload"
-    
+
     if [ -f "/home/$SYSTEM_USER/domoticz_install.sh" ]; then
         do_function_task "rm -f /home/$SYSTEM_USER/domoticz_install.sh"
     fi
@@ -370,7 +389,6 @@ print_padded_text() {
     printf '\n'
 }
 
-
 print_task() {
     local TEXT="$1"
     local STATUS="$2"
@@ -398,8 +416,10 @@ print_task() {
     printf "%b" "$PRINTTEXT"
 
     if (( STATUS >= 1 )); then
-        inform_user "Step $STEP has failed: $TEXT"
-        final_step
+        if [[ "$EXECUTIONFROM" != "Internet" ]]; then
+            inform_user "Step $STEP has failed: $TEXT"
+            final_step
+        fi
     fi
 }
 
@@ -441,13 +461,13 @@ get_config() {
     [[ -z "$LOGFILE" ]] && LOGFILE="$HOME/setup-$(date +%Y-%m-%d_%Hh%Mm).log"
 
     STEP=$(echo "$CONFIG" | cut -f2 -d " ")
-    [[ -z "$STEP" ]] && STEP=$STARTSTEP
-    [[ $STEP != *[[:digit:]]* ]] && STEP=$STARTSTEP
+    [[ -z "$STEP" ]] && STEP=1
+    [[ $STEP != *[[:digit:]]* ]] && STEP=1
 }
 
 execute_step() {
     local EXECUTIONSTEP="$1"
-    
+
     for item in "${EXECUTIONSETUP[@]}"
     do
         if [[ $item == *","* ]]
@@ -465,15 +485,15 @@ execute_step() {
                 fi
             fi
         fi
-    done    
+    done
 }
 
 reboot_step() {
     local EXECUTIONSTEP="$1"
-    
+
     inform_user "Step $STEP has finished"
     STEP=$(( STEP + 1 ))
-    
+
     for item in "${EXECUTIONSETUP[@]}"
     do
         if [[ $item == *","* ]]
@@ -482,7 +502,7 @@ reboot_step() {
             tmpStep=${tmpArray[0]}
             tmpExecute=${tmpArray[1]}
             tmpReboot=${tmpArray[2]}
-            
+
             if (( EXECUTIONSTEP == tmpStep )) ; then
                 if [ "$tmpExecute" = "true" ] ; then
                     if [ "$tmpReboot" = "true" ] ; then
@@ -493,36 +513,19 @@ reboot_step() {
                 fi
             fi
         fi
-    done    
+    done
 }
 
 final_step() {
-    # install ssh key
     do_function "Install SSH key" "do_ssh_key"
-    
-    # enable ssh
     do_function "Enable SSH" "do_ssh"
-
-    # harden ssh !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # do_function "Harden SSH" "do_ssh_hardening"
-
-    # remove auto login
     do_function "Remove auto login" "do_auto_login_removal"
-
-    # remove login script from .bashrc
     do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/$SYSTEM_USER\/setup.sh/d' /home/$SYSTEM_USER/.bashrc"
-
-    # remove script/config file
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
     do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
     do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
-    
-    # reboot system
-    if (( STEP != 99 )) ; then
-        do_task "Reboot" "sleep 10 && sudo reboot"
-    fi
-    
-    # exit script at end
+    do_task "Reboot" "sleep 10 && sudo reboot"
     exit
 }
 
@@ -531,29 +534,31 @@ inform_user() {
     run_cmd "$COMMAND"
 }
 
-############################################################################
-##
-## MAIN SECTION OF SCRIPT - action begins here
-##
-#############################################################################
-##
+## *************************************************************************************************** ##
+##        __  __          _____ _   _                                                                  ##
+##       |  \/  |   /\   |_   _| \ | |                                                                 ##
+##       | \  / |  /  \    | | |  \| |                                                                 ##
+##       | |\/| | / /\ \   | | | . ` |                                                                 ##
+##       | |  | |/ ____ \ _| |_| |\  |                                                                 ##
+##       |_|  |_/_/    \_\_____|_| \_|                                                                 ##
+##                                                                                                     ##
+## *************************************************************************************************** ##
 
 tput civis
-get_config
 
 # start script for beginning when just downloaded
-if [[ "$SCRIPTNAME" != *"setup.sh"* ]]; then
+if [[ "$EXECUTIONFROM" == "Internet" ]]; then
     # check if argument has been provided
     if [[ $# -eq 0 ]]
     then
         echo "No password supplied"
         exit
     fi
-    
+
     # check if script run by user pi
     if [ "$(whoami)" != "pi" ]; then
-        echo "Script must be run as user: pi"
-        exit 
+        echo "Script startup from Internet must be run as user: pi"
+        exit
     fi
 
     do_task "Remove script from home directory pi user" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
@@ -563,35 +568,59 @@ if [[ "$SCRIPTNAME" != *"setup.sh"* ]]; then
     # save script in home directory
     do_task "Save script to home directory" "wget -O $SCRIPTFILE https://raw.githubusercontent.com/irjdekker/DomoPi/master/setup.sh"
     do_task "Change permissions on script" "chmod 700 $SCRIPTFILE"
+    do_task "Change script content" "sed -i 's/^EXECUTIONFROM=\"Internet\"/EXECUTIONFROM=\"Local\"/' $SCRIPTFILE"
     do_task "Save source file to home directory" "wget -O $ENCSOURCEFILE  https://raw.githubusercontent.com/irjdekker/DomoPi/master/source/source.sh.enc"
     do_task "Decrypt source file" "/usr/bin/openssl enc -aes-256-cbc -d -in $ENCSOURCEFILE -out $SOURCEFILE -pass pass:$1"
     do_task "Remove encrypted source file from home directory" "[ -f $ENCSOURCEFILE ] && rm -f $ENCSOURCEFILE || sleep 0.1"
     do_task "Change permissions on source file" "chmod 700 $SOURCEFILE"
+
+    # source all script parameters
+    if [ -f "$SOURCEFILE" ]; then
+        source "$SOURCEFILE"
+    else
+        exit
+    fi
+
+    # Change startup to new system account
+    do_function "Change primary account" "do_change_primary_account"
+    do_function "Clean pi account" "do_clean_pi_account"
+    do_function "Configure auto login" "do_auto_login"
+    do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/$SYSTEM_USER/setup.sh' /home/$SYSTEM_USER/.bashrc || echo '/bin/bash /home/$SYSTEM_USER/setup.sh' >> /home/$SYSTEM_USER/.bashrc"
+
+    # Restart system to continue install with system account
+    inform_user "Installation of setup script has finished"
+    do_task "Reboot" "sleep 10 && sudo reboot"
+else
+    # check if script run by user pi
+    if [ "$(whoami)" = "pi" ]; then
+        echo "Script startup from local cannot be run as user: pi"
+        exit
+    fi
+
+    # test internet connection
+    do_function "Test internet connection" "do_test_internet"
+
+    # source all script parameters
+    if [ -f "$SOURCEFILE" ]; then
+        source "$SOURCEFILE"
+    else
+        exit
+    fi
+
+    # check if script run by system user
+    if [ "$(whoami)" != "$SYSTEMUSER" ]; then
+        echo "Script startup from local must be run as user: $SYSTEMUSER"
+        exit
+    fi
 fi
 
-# test internet connection
-do_function "Test internet connection" "do_test_internet"
-[ -f "$SOURCEFILE" ] && source "$SOURCEFILE"
+get_config
 
 if (( STEP == 1 )) ; then
     if execute_step "$STEP"; then
-        # Change primary account
-        do_function "Change primary account" "do_change_primary_account"
-        
-        # Clean pi account
-        do_function "Clean pi account" "do_clean_pi_account"
+        # lock pi account
+        do_function "Lock pi account" "do_lock_pi_account"
 
-        # setup auto login
-        do_function "Configure auto login" "do_auto_login"
-
-        # add login script to .bashrc
-        do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/$SYSTEM_USER/setup.sh' /home/$SYSTEM_USER/.bashrc || echo '/bin/bash /home/$SYSTEM_USER/setup.sh' >> /home/$SYSTEM_USER/.bashrc"
-    fi
-    reboot_step "$STEP"
-fi
-
-if (( STEP == 2 )) ; then
-    if execute_step "$STEP"; then
         # update boot configuration
         do_function "Update boot configuration" "do_update_boot"
 
@@ -646,7 +675,7 @@ if (( STEP == 2 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 3 )) ; then
+if (( STEP == 2 )) ; then
     if execute_step "$STEP"; then
         # disable install of additional packages
         do_function "Disable additional packages (apt)" "do_apt_no_add"
@@ -670,13 +699,13 @@ if (( STEP == 3 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 4 )) ; then
+if (( STEP == 3 )) ; then
     if execute_step "$STEP"; then
         # configure keyboard (Logitech G11)
         do_function "Configure keyboard" "do_configure_keyboard \"pc105\" \"us\""
 
         # change timezone
-        do_function "Change timezone" "do_change_timezone"  
+        do_function "Change timezone" "do_change_timezone"
 
         # change locale
         do_function "Configure locale" "do_change_locale \"en_US.UTF-8\""
@@ -690,7 +719,7 @@ if (( STEP == 4 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 5 )) ; then
+if (( STEP == 4 )) ; then
     if execute_step "$STEP"; then
         # create s3 backup folder
         do_task "Create s3 backup folder" "sudo mkdir -p /home/$SYSTEM_USER/s3/domoticz-backup"
@@ -707,7 +736,7 @@ if (( STEP == 5 )) ; then
     reboot_step "$STEP"
 fi
 
-if (( STEP == 6 )) ; then
+if (( STEP == 5 )) ; then
     if execute_step "$STEP"; then
         # autostart bluetooth script
         do_task "Configure auto start for bluetooth script" "sudo sed -i 's/^exit 0$/\/home\/$SYSTEM_USER\/bluetooth\/btlecheck.sh -m1 7C:2F:80:96:37:2C -i1 35 -m2 7C:2F:80:9D:40:A1 -i2 36 2>\&1 \&\n\nexit 0/' /etc/rc.local"
@@ -773,7 +802,7 @@ if (( STEP == 6 )) ; then
 
         # configure unattended postfix
         do_function "Configure unattended postfix" "do_unattended_postfix"
-        
+
         # install postfix
         do_task "Install postfix" "sudo apt-get -qq -y install --assume-yes postfix mailutils > /tmp/setup.err 2>&1 && ! grep -q -e '^Err:' -e '^[WE]:' /tmp/setup.err"
 
