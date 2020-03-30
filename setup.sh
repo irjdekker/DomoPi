@@ -602,10 +602,14 @@ if [[ "$EXECUTIONFROM" == "Internet" ]]; then
     do_task "Reboot" "sleep 10 && sudo reboot"
     exit
 else
+    # Retrieve logfile and step in process
+    get_config
+
     # check if script run by user pi
     if [ "$(whoami)" = "pi" ]; then
         echo "Script startup from local cannot be run as user: pi"
-        exit
+        inform_user "Step $STEP has failed: Script startup from local cannot be run as user pi"
+        final_step
     fi
 
     # test internet connection
@@ -615,17 +619,17 @@ else
     if [ -f "$SOURCEFILE" ]; then
         source "$SOURCEFILE"
     else
-        exit
+        inform_user "Step $STEP has failed: no sourcefile"
+        final_step
     fi
 
     # check if script run by system user
     if [ "$(whoami)" != "$SYSTEM_USER" ]; then
         echo "Script startup from local must be run as user: $SYSTEM_USER"
-        exit
+        inform_user "Step $STEP has failed: Script startup from local must be run as user $SYSTEM_USER"
+        final_step
     fi
 fi
-
-get_config
 
 if (( STEP == 1 )) ; then
     if execute_step "$STEP"; then
