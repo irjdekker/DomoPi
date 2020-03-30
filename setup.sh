@@ -98,15 +98,15 @@ do_change_primary_account() {
 }
 
 do_clean_pi_account() {
-    do_function_task "[ -f $SCRIPTFILE ] && sudo mv -f $SCRIPTFILE /home/$SYSTEMUSER"
-    do_function_task "[ -f /home/$SYSTEMUSER/setup.sh ] && sudo chown @SYSTEMUSER:$SYSTEMUSER /home/$SYSTEMUSER/setup.sh"
-    do_function_task "[ -f /home/$SYSTEMUSER/setup.sh ] && sudo chmod 700 /home/$SYSTEMUSER/setup.sh"
-    do_function_task "[ -f $CONFIGFILE ] && sudo mv -f $CONFIGFILE /home/$SYSTEMUSER"
-    do_function_task "[ -f /home/$SYSTEMUSER/setup.conf ] && sudo chown @SYSTEMUSER:$SYSTEMUSER /home/$SYSTEMUSER/setup.conf"
-    do_function_task "[ -f /home/$SYSTEMUSER/setup.conf ] && sudo chmod 644 /home/$SYSTEMUSER/setup.conf"
-    do_function_task "[ -f $SOURCEFILE ] && sudo mv -f $SOURCEFILE /home/$SYSTEMUSER"
-    do_function_task "[ -f /home/$SYSTEMUSER/source.sh ] && sudo chown @SYSTEMUSER:$SYSTEMUSER /home/$SYSTEMUSER/source.sh"
-    do_function_task "[ -f /home/$SYSTEMUSER/source.sh ] && sudo chmod 700 /home/$SYSTEMUSER/source.sh"
+    do_function_task "[ -f $SCRIPTFILE ] && sudo mv -f $SCRIPTFILE /home/$SYSTEM_USER"
+    do_function_task "[ -f /home/$SYSTEM_USER/setup.sh ] && sudo chown @$SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/setup.sh"
+    do_function_task "[ -f /home/$SYSTEM_USER/setup.sh ] && sudo chmod 700 /home/$SYSTEM_USER/setup.sh"
+    do_function_task "[ -f $CONFIGFILE ] && sudo mv -f $CONFIGFILE /home/$SYSTEM_USER"
+    do_function_task "[ -f /home/$SYSTEM_USER/setup.conf ] && sudo chown @$SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/setup.conf"
+    do_function_task "[ -f /home/$SYSTEM_USER/setup.conf ] && sudo chmod 644 /home/$SYSTEM_USER/setup.conf"
+    do_function_task "[ -f $SOURCEFILE ] && sudo mv -f $SOURCEFILE /home/$SYSTEM_USER"
+    do_function_task "[ -f /home/$SYSTEM_USER/source.sh ] && sudo chown @$SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/source.sh"
+    do_function_task "[ -f /home/$SYSTEM_USER/source.sh ] && sudo chmod 700 /home/$SYSTEM_USER/source.sh"
     do_function_task "history -c && history -w"
 }
 
@@ -421,6 +421,9 @@ print_task() {
         if [[ "$EXECUTIONFROM" != "Internet" ]]; then
             inform_user "Step $STEP has failed: $TEXT"
             final_step
+        else
+            inform_user "Installation of setup script has failed"
+            exit
         fi
     fi
 }
@@ -595,11 +598,12 @@ if [[ "$EXECUTIONFROM" == "Internet" ]]; then
     do_function "Change primary account" "do_change_primary_account"
     do_function "Clean pi account" "do_clean_pi_account"
     do_function "Configure auto login" "do_auto_login"
-    do_task "Add script to .bashrc" "grep -qxF '/bin/bash /home/$SYSTEM_USER/setup.sh' /home/$SYSTEM_USER/.bashrc || echo '/bin/bash /home/$SYSTEM_USER/setup.sh' >> /home/$SYSTEM_USER/.bashrc"
+    do_task "Add script to .bashrc" "sudo grep -qxF '/bin/bash /home/$SYSTEM_USER/setup.sh' /home/$SYSTEM_USER/.bashrc || echo '/bin/bash /home/$SYSTEM_USER/setup.sh' | sudo tee -a /home/$SYSTEM_USER/.bashrc"
 
     # Restart system to continue install with system account
     inform_user "Installation of setup script has finished"
     do_task "Reboot" "sleep 10 && sudo reboot"
+    exit
 else
     # check if script run by user pi
     if [ "$(whoami)" = "pi" ]; then
@@ -618,8 +622,8 @@ else
     fi
 
     # check if script run by system user
-    if [ "$(whoami)" != "$SYSTEMUSER" ]; then
-        echo "Script startup from local must be run as user: $SYSTEMUSER"
+    if [ "$(whoami)" != "$SYSTEM_USER" ]; then
+        echo "Script startup from local must be run as user: $SYSTEM_USER"
         exit
     fi
 fi
