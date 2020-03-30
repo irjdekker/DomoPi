@@ -99,13 +99,13 @@ do_change_primary_account() {
 
 do_clean_pi_account() {
     do_function_task "[ -f $SCRIPTFILE ] && sudo mv -f $SCRIPTFILE /home/$SYSTEM_USER"
-    do_function_task "[ -f /home/$SYSTEM_USER/setup.sh ] && sudo chown @$SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/setup.sh"
+    do_function_task "[ -f /home/$SYSTEM_USER/setup.sh ] && sudo chown $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/setup.sh"
     do_function_task "[ -f /home/$SYSTEM_USER/setup.sh ] && sudo chmod 700 /home/$SYSTEM_USER/setup.sh"
     do_function_task "[ -f $CONFIGFILE ] && sudo mv -f $CONFIGFILE /home/$SYSTEM_USER"
-    do_function_task "[ -f /home/$SYSTEM_USER/setup.conf ] && sudo chown @$SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/setup.conf"
+    do_function_task "[ -f /home/$SYSTEM_USER/setup.conf ] && sudo chown $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/setup.conf"
     do_function_task "[ -f /home/$SYSTEM_USER/setup.conf ] && sudo chmod 644 /home/$SYSTEM_USER/setup.conf"
     do_function_task "[ -f $SOURCEFILE ] && sudo mv -f $SOURCEFILE /home/$SYSTEM_USER"
-    do_function_task "[ -f /home/$SYSTEM_USER/source.sh ] && sudo chown @$SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/source.sh"
+    do_function_task "[ -f /home/$SYSTEM_USER/source.sh ] && sudo chown $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/source.sh"
     do_function_task "[ -f /home/$SYSTEM_USER/source.sh ] && sudo chmod 700 /home/$SYSTEM_USER/source.sh"
     do_function_task "history -c && history -w"
 }
