@@ -397,7 +397,9 @@ print_task() {
     if (( STATUS == -2 )); then
         PRINTTEXT="\r         "
     elif (( STATUS == -1 )); then
-        print_padded_text "$TEXT" >> "$LOGFILE"
+        if [[ "$EXECUTIONFROM" != "Internet" ]]; then
+            print_padded_text "$TEXT" >> "$LOGFILE"
+        fi
         PRINTTEXT="\r[      ] "
     elif (( STATUS == 0 )); then
         PRINTTEXT="\r[  ${IGreen}OK${Reset}  ] "
@@ -424,10 +426,18 @@ print_task() {
 }
 
 run_cmd() {
-    if eval "$@" >> "$LOGFILE" 2>&1; then
-        return 0
+    if [[ "$EXECUTIONFROM" != "Internet" ]]; then
+        if eval "$@" >> "$LOGFILE" 2>&1; then
+            return 0
+        else
+            return 1
+        fi
     else
-        return 1
+        if eval "$@" >> /dev/null 2>&1; then
+            return 0
+        else
+            return 1
+        fi
     fi
 }
 
