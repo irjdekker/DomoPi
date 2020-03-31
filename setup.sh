@@ -285,6 +285,7 @@ do_install_domoticz() {
     do_function_task "sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert \\/home\\/$SYSTEM_USER\\/domoticz\\/letsencrypt_server_cert.pem/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i 's/DAEMON_ARGS -log \\/tmp\\/domoticz.txt/DAEMON_ARGS -log \\/tmp\\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh"
+    do_function_task "sudo sed -i 's/start-stop-daemon --start --quiet/start-stop-daemon --chuid \$USERNAME --start --quiet/' /etc/init.d/domoticz.sh"
     do_function_task "sudo systemctl daemon-reload"
     do_function_task "sudo chown -R $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/domoticz"
 
