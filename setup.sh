@@ -119,6 +119,7 @@ do_lock_pi_account() {
     do_function_task "sudo sed -i 's/^/#/g' /etc/sudoers.d/010_pi-nopasswd"
     do_function_task "echo 'pi:$(/usr/bin/openssl rand -base64 20)' | sudo -S /usr/sbin/chpasswd"
     do_function_task "sudo passwd -l pi"
+    do_function_task "sudo chage -E0 pi"
 }
 
 do_update_boot() {
@@ -212,7 +213,7 @@ do_download_backup() {
     do_function_task "chmod 700 /home/$SYSTEM_USER/backup/*.sh"
 }
 
-do_change_hostname() {
+do_change_hostname() { 
     local NEW_HOSTNAME="$1"
     if ! CURRENT_HOSTNAME="$(tr -d ' \t\n\r' < /etc/hostname)"; then print_task "$MESSAGE" 1 true; fi
 
@@ -285,6 +286,7 @@ do_install_domoticz() {
     do_function_task "sudo sed -i 's/DAEMON_ARGS -log \\/tmp\\/domoticz.txt/DAEMON_ARGS -log \\/tmp\\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i '/-loglevel=3/ s/^#//' /etc/init.d/domoticz.sh"
     do_function_task "sudo systemctl daemon-reload"
+    do_function_task "sudo chown -R $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/domoticz"
 
     if [ -f "/home/$SYSTEM_USER/domoticz_install.sh" ]; then
         do_function_task "rm -f /home/$SYSTEM_USER/domoticz_install.sh"
