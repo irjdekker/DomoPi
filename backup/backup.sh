@@ -1,4 +1,6 @@
 #!/bin/bash
+workdirectory=`dirname "$(readlink -f "$0")"`
+current_user=$(whoami)
 DOMO_IP="<SYSTEM_IP>"
 DOMO_PORT="443"
 
@@ -6,15 +8,15 @@ DOMO_PORT="443"
 TIMESTAMP=`/bin/date +%Y%m%d%H%M%S`
 DBBACKUPFILE="domoticz_$TIMESTAMP.db"
 ZWBACKUPFILE="ozwcache_0xdaa30a14_$TIMESTAMP.xml"
-BACKUPFOLDER="/home/pi/s3/domoticz-backup"
+BACKUPFOLDER="/home/$current_user/s3/domoticz-backup"
 SCRIPTSFOLDER="$BACKUPFOLDER/scripts"
 CONFIGFOLDER="$BACKUPFOLDER/config"
 
 #Create backup
 /usr/bin/curl -k -s https://$DOMO_IP:$DOMO_PORT/backupdatabase.php > $BACKUPFOLDER/$DBBACKUPFILE
-/bin/cp -bfp /home/pi/domoticz/Config/ozwcache_0xdaa30a14.xml $BACKUPFOLDER/$ZWBACKUPFILE
-/bin/tar -zcf $SCRIPTSFOLDER/domoticz_scripts_$TIMESTAMP.tar.gz /home/pi/domoticz/scripts/
-/bin/tar -zcf $CONFIGFOLDER/domoticz_config_$TIMESTAMP.tar.gz /home/pi/domoticz/Config/
+/bin/cp -bfp /home/$current_user/domoticz/Config/ozwcache_0xdaa30a14.xml $BACKUPFOLDER/$ZWBACKUPFILE
+/bin/tar -zcf $SCRIPTSFOLDER/domoticz_scripts_$TIMESTAMP.tar.gz /home/$current_user/domoticz/scripts/
+/bin/tar -zcf $CONFIGFOLDER/domoticz_config_$TIMESTAMP.tar.gz /home/$current_user/domoticz/Config/
 
 #Create symbolic link to latest backup
 /bin/ln -sf $DBBACKUPFILE $BACKUPFOLDER/domoticz.db

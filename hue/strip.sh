@@ -12,7 +12,9 @@
 
 # CONFIGURATION
 # -----------------------------------------------------------------------------------------
-source /home/pi/hue/hue_bashlibrary.sh
+workdirectory=`dirname "$(readlink -f "$0")"`
+current_user=$(whoami)
+source $workdirectory/hue_bashlibrary.sh
 
 # Mind the gap: do not change the names of these variables, the bash_library needs those...
 ip='<STRIP_IP>'						# IP of hue bridge, enter your bridge IP here!
