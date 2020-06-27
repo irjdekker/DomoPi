@@ -538,6 +538,7 @@ final_step() {
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
     do_task "Remove script config file from home directory" "[ -f $CONFIGFILE ] && rm -f $CONFIGFILE || sleep 0.1"
     do_task "Remove source file from home directory" "[ -f $SOURCEFILE ] && rm -f $SOURCEFILE || sleep 0.1"
+    inform_user "Complete installation has finished"
     do_task "Reboot" "sleep 10 && sudo reboot"
     exit
 }

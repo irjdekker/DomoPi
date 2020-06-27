@@ -23,7 +23,7 @@ username='<STRIP_USERNAME>'				# Link with bridge: username / app name (min 10 c
 loglevel=2							# 0 all logging off, # 1 gossip, # 2 verbose, # 3 errors
 
 # Variables of this scripts
-lights='4'					# Define the lights you want to use, e.g. '3' or '3 4' or '3 4 7 9'
+lights='2'					# Define the lights you want to use, e.g. '3' or '3 4' or '3 4 7 9'
 
 # MAIN
 # -----------------------------------------------------------------------------------------
