@@ -548,6 +548,16 @@ inform_user() {
     run_cmd "$COMMAND"
 }
 
+wifi_connected() {
+    WLAN=$(/sbin/ifconfig wlan0 | grep inet\ addr | wc -l)
+
+    if [ $WLAN -eq 0 ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 ## *************************************************************************************************** ##
 ##        __  __          _____ _   _                                                                  ##
 ##       |  \/  |   /\   |_   _| \ | |                                                                 ##
@@ -650,7 +660,9 @@ if (( STEP == 1 )) ; then
         do_task "Disable warnings" "grep -qxF 'avoid_warnings=1' /boot/config.txt || echo 'avoid_warnings=1' | sudo tee -a /boot/config.txt"
 
         # disable WiFi
-        do_task "Disable onboard WiFi" "grep -qxF 'dtoverlay=pi3-disable-wifi' /boot/config.txt || echo 'dtoverlay=pi3-disable-wifi' | sudo tee -a /boot/config.txt"
+        if ! wifi_connected; then
+            do_task "Disable onboard WiFi" "grep -qxF 'dtoverlay=pi3-disable-wifi' /boot/config.txt || echo 'dtoverlay=pi3-disable-wifi' | sudo tee -a /boot/config.txt"
+        fi
 
         # disable onboard bluetooth
         do_task "Disable onboard Bluetooth" "grep -qxF 'dtoverlay=pi3-disable-bt' /boot/config.txt || echo 'dtoverlay=pi3-disable-bt' | sudo tee -a /boot/config.txt"
