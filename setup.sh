@@ -213,7 +213,7 @@ do_download_backup() {
     do_function_task "chmod 700 /home/$SYSTEM_USER/backup/*.sh"
 }
 
-do_change_hostname() { 
+do_change_hostname() {
     local NEW_HOSTNAME="$1"
     if ! CURRENT_HOSTNAME="$(tr -d ' \t\n\r' < /etc/hostname)"; then print_task "$MESSAGE" 1 true; fi
 
@@ -303,7 +303,7 @@ do_restore_database() {
         print_task "$MESSAGE" 1 true
     fi
 
-    do_function_task "sudo chown root:root /home/$SYSTEM_USER/domoticz/domoticz.db"
+    do_function_task "sudo chown $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/domoticz/domoticz.db"
     do_function_task "sudo chmod 600 /home/$SYSTEM_USER/domoticz/domoticz.db"
 
     if [ -f "/home/$SYSTEM_USER/s3/domoticz-backup/ozwcache_0xdaa30a14.xml" ]; then
@@ -312,7 +312,7 @@ do_restore_database() {
         print_task "$MESSAGE" 1 true
     fi
 
-    do_function_task "sudo chown root:root /home/$SYSTEM_USER/domoticz/Config/ozwcache_0xdaa30a14.xml"
+    do_function_task "sudo chown $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/domoticz/Config/ozwcache_0xdaa30a14.xml"
     do_function_task "sudo chmod 600 /home/$SYSTEM_USER/domoticz/Config/ozwcache_0xdaa30a14.xml"
     do_function_task "sudo service domoticz.sh start"
 }
@@ -361,18 +361,46 @@ do_ssh_key() {
     do_function_task "chmod 600 /home/$SYSTEM_USER/.ssh/authorized_keys"
 }
 
+do_ssh() {
+    if ! run_cmd "sudo pstree -p | grep -q -E \".*sshd.*\($$\)\""; then
+        do_function_task "sudo update-rc.d ssh enable"
+        do_function_task "sudo invoke-rc.d ssh start"
+    fi
+}
+
+do_ssh_hardening() {
+    do_function_task "sudo grep -qx '^.*KexAlgorithms.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*KexAlgorithms.*/KexAlgorithms curve25519-sha256@libssh.org/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'KexAlgorithms curve25519-sha256@libssh.org' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qP '(?=^((?!keying).)*$).*Ciphers.*' /etc/ssh/sshd_config && { sudo sed -i '/keying/ ! s/.*Ciphers.*/Ciphers aes256-gcm@openssh.com,chacha20-poly1305@openssh.com/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'Ciphers aes256-gcm@openssh.com,chacha20-poly1305@openssh.com' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*MACs.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*MACs.*/MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qP '(?=^((?!setting).)*$).*PermitRootLogin.*' /etc/ssh/sshd_config && { sudo sed -i '/setting/ ! s/.*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'PermitRootLogin no' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*PrintLastLog.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*PrintLastLog.*/PrintLastLog yes/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'PrintLastLog yes' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*AllowTcpForwarding.*$' /etc/ssh/sshd_config && { sudo sed -i '0,/.*AllowTcpForwarding.*/ s/.*AllowTcpForwarding.*/AllowTcpForwarding no/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'AllowTcpForwarding no' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*X11Forwarding.*$' /etc/ssh/sshd_config && { sudo sed -i '0,/.*X11Forwarding.*/ s/.*X11Forwarding.*/X11Forwarding no/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'X11Forwarding no' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*StrictHostKeyChecking.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*StrictHostKeyChecking.*/StrictHostKeyChecking ask/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'StrictHostKeyChecking ask' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*AllowUsers.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*AllowUsers.*/AllowUsers irjdekker/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'AllowUsers irjdekker' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*ClientAliveInterval.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*ClientAliveInterval.*/ClientAliveInterval 300/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'ClientAliveInterval 300' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*ClientAliveCountMax.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*ClientAliveCountMax.*/ClientAliveCountMax 0/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'ClientAliveCountMax 0' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qP '(?=^((?!PAM).)*$).*PasswordAuthentication.*' /etc/ssh/sshd_config && { sudo sed -i '/PAM/ ! s/.*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'PasswordAuthentication no' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*Protocol.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*Protocol.*/Protocol 2/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'Protocol 2' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo grep -qx '^.*HostKey.*dsa_key.*$' /etc/ssh/sshd_config && { sudo sed -i '/.*HostKey.*dsa_key.*/d' /etc/ssh/sshd_config; echo > /dev/null; }"
+    do_function_task "sudo rm /etc/ssh/ssh_host_dsa_key*"
+    do_function_task "sudo rm /etc/ssh/ssh_host_ecdsa_key*"
+    do_function_task "sudo grep -qx '^.*HostKey.*rsa_key.*$' /etc/ssh/sshd_config && { sudo sed -i '/.*HostKey.*rsa_key.*/d' /etc/ssh/sshd_config; echo > /dev/null; }"
+    do_function_task "sudo rm /etc/ssh/ssh_host_rsa_key*"
+    do_function_task "sudo grep -qx '^.*HostKey.*ed25519_key.*$' /etc/ssh/sshd_config && { sudo sed -i 's/.*HostKey.*ed25519_key.*/HostKey /etc/ssh/ssh_host_ed25519_key/' /etc/ssh/sshd_config; echo > /dev/null; } || echo 'HostKey /etc/ssh/ssh_host_ed25519_key' | sudo tee -a /etc/ssh/sshd_config"
+    do_function_task "sudo ssh-keygen -q -N '' -t ed25519 -f /etc/ssh/ssh_host_ed25519_key <<<y 2>&1 >/dev/null"
+    do_function_task "sudo chmod 600 /etc/ssh/ssh_host_ed25519_key"
+    do_function_task "sudo ssh-keygen -G /tmp/moduli-2048.candidates -b 2048"
+    do_function_task "sudo ssh-keygen -T /tmp/moduli-2048 -f /tmp/moduli-2048.candidates"
+    do_function_task "sudo cp /tmp/moduli-2048 /etc/ssh/moduli"
+    do_function_task "sudo rm /tmp/moduli-2048"
+}
+
 do_auto_login_removal() {
     do_function_task "sudo systemctl set-default multi-user.target"
     do_function_task "sudo ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service"
     if [ -f /etc/systemd/system/getty@tty1.service.d/autologin.conf ]; then
         do_function_task "sudo rm /etc/systemd/system/getty@tty1.service.d/autologin.conf"
-    fi
-}
-
-do_ssh() {
-    if ! run_cmd "sudo pstree -p | grep -q -E \".*sshd.*\($$\)\""; then
-        do_function_task "sudo update-rc.d ssh enable"
-        do_function_task "sudo invoke-rc.d ssh start"
     fi
 }
 
@@ -532,7 +560,7 @@ reboot_step() {
 final_step() {
     do_function "Install SSH key" "do_ssh_key"
     do_function "Enable SSH" "do_ssh"
-    # do_function "Harden SSH" "do_ssh_hardening"
+    do_function "Harden SSH" "do_ssh_hardening"
     do_function "Remove auto login" "do_auto_login_removal"
     do_task "Remove script from .bashrc" "sed -i '/\/bin\/bash \/home\/$SYSTEM_USER\/setup.sh/d' /home/$SYSTEM_USER/.bashrc"
     do_task "Remove script from home directory" "[ -f $SCRIPTFILE ] && rm -f $SCRIPTFILE || sleep 0.1"
@@ -549,9 +577,9 @@ inform_user() {
 }
 
 wifi_connected() {
-    WLAN=$(/sbin/ifconfig wlan0 | grep inet\ addr | wc -l)
+    WLAN=$(/sbin/ifconfig wlan0 | grep -c inet\ addr)
 
-    if [ $WLAN -eq 0 ]; then
+    if [ "$WLAN" -eq "0" ]; then
         return 0
     else
         return 1
