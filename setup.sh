@@ -281,6 +281,8 @@ do_install_domoticz() {
     do_function_task "chmod 700 /home/$SYSTEM_USER/domoticz_install.sh"
     do_function_task "sed -i \"/^\\s*updatedomoticz\$/s/updatedomoticz/installdomoticz/\" /home/$SYSTEM_USER/domoticz_install.sh"
     do_function_task "sudo /bin/bash /home/$SYSTEM_USER/domoticz_install.sh --unattended"
+    do_function_task "sudo sed -i 's/PIDFILE=\/var\/run\/\$NAME.pid/PIDFILE=\/home\/$SYSTEM_USER\/domoticz\/\$NAME.pid/' /etc/init.d/domoticz.sh"
+    do_function_task "sudo sed -i '/\$NAME -pidfile/ s/^#//' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i 's/DAEMON_ARGS -www 8080/DAEMON_ARGS -www 0/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i 's/DAEMON_ARGS -sslwww 443/DAEMON_ARGS -sslwww 443 -sslcert \\/home\\/$SYSTEM_USER\\/domoticz\\/letsencrypt_server_cert.pem/' /etc/init.d/domoticz.sh"
     do_function_task "sudo sed -i 's/DAEMON_ARGS -log \\/tmp\\/domoticz.txt/DAEMON_ARGS -log \\/tmp\\/domoticz.txt -debug -verbose -loglevel=3/' /etc/init.d/domoticz.sh"
@@ -288,6 +290,7 @@ do_install_domoticz() {
     do_function_task "sudo sed -i 's/start-stop-daemon --start --quiet/start-stop-daemon --chuid \$USERNAME --start --quiet/' /etc/init.d/domoticz.sh"
     do_function_task "sudo systemctl daemon-reload"
     do_function_task "sudo chown -R $SYSTEM_USER:$SYSTEM_USER /home/$SYSTEM_USER/domoticz"
+    do_function_task "sudo setcap CAP_NET_BIND_SERVICE=+eip /home/$SYSTEM_USER/domoticz/domoticz"
 
     if [ -f "/home/$SYSTEM_USER/domoticz_install.sh" ]; then
         do_function_task "rm -f /home/$SYSTEM_USER/domoticz_install.sh"
